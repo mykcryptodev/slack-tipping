@@ -22,6 +22,7 @@ export const getAddressByUserId = async (userId: string) => {
   try {
     const addressResponse = await fetch(getAddressUrl, fetchOptions);
     const addressData = await addressResponse.json() as { result: string };
+    console.log('\x1b[33m%s\x1b[0m', `getAddressByUserId for userId ${userId}:`, JSON.stringify(addressData, null, 2));
     return addressData.result;
   } catch (error) {
     console.error(`Error getting address for user ${userId}:`, error);
@@ -43,7 +44,7 @@ export const isAddressRegistered = async (address: string) => {
   try {
     const response = await fetch(isRegisteredUrl, fetchOptions);
     const data = await response.json() as { result: boolean };
-    console.log(`isRegistered for address ${address}:`, JSON.stringify(data, null, 2));
+    console.log('\x1b[33m%s\x1b[0m', `isRegistered for address ${address}:`, JSON.stringify(data, null, 2));
     return data.result;
   } catch (error) {
     console.error(`Error getting isRegistered for address ${address}:`, error);
@@ -52,8 +53,7 @@ export const isAddressRegistered = async (address: string) => {
 }
 
 export const registerAccount = async (address: string) => {
-  const baseUrl = new URL(`${env.THIRDWEB_ENGINE_URL}/contract/${CHAIN.id}/${TIP_TOKEN}/write`);
-  const registerUrl = new URL(`${baseUrl}/register-account`);
+  const registerUrl = new URL(`${env.THIRDWEB_ENGINE_URL}/contract/${CHAIN.id}/${TIP_TOKEN}/write`);
 
   const fetchOptions = {
     headers: {
@@ -85,6 +85,7 @@ export const registerAccount = async (address: string) => {
   try {
     const response = await fetch(registerUrl, fetchOptions);
     const data = await response.json() as { result: { queueId: string } };
+    console.log('\x1b[33m%s\x1b[0m', `registerAccount for address ${address}:`, JSON.stringify(data, null, 2));
     return data.result;
   } catch (error) {
     console.error(`Error registering account for address ${address}:`, error);
@@ -108,6 +109,7 @@ export const isAddressDeployed = async (address: string) => {
   try {
     const response = await fetch(isDeployedUrl, fetchOptions);
     const data = await response.json() as { result: boolean };
+    console.log('\x1b[33m%s\x1b[0m', `isDeployed for address ${address}:`, JSON.stringify(data, null, 2));
     return data.result;
   } catch (error) {
     console.error(`Error getting isDeployed for address ${address}:`, error);
@@ -142,6 +144,7 @@ export const deployAccount = async (userId: string) => {
         deployedAddress: string;
       }
     };
+    console.log('\x1b[33m%s\x1b[0m', `deployAccount for user ${userId}:`, JSON.stringify(data, null, 2));
     return data.result;
   } catch (error) {
     console.error(`Error deploying account for user ${userId}:`, error);

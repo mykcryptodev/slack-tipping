@@ -60,7 +60,6 @@ contract Tips is ERC20Base, PermissionsEnumerable {
     
     function tip(address to, address from, uint256 amount) external {
         if (!isRegistered[from]) revert SenderNotRegistered();
-        if (!isRegistered[to]) revert RecipientNotRegistered();
         if (from == to) revert CannotTipYourself();
         // msg.sender must be the from or have the TIP_ON_BEHALF_OF_ROLE
         if (msg.sender != from && !hasRole(TIP_ON_BEHALF_OF_ROLE, msg.sender)) revert SenderNotAuthorized();

@@ -17,6 +17,7 @@ export const env = createEnv({
     AUTH_SLACK_STATE_SECRET: z.string(),
     THIRDWEB_ENGINE_ACCESS_TOKEN: z.string(),
     THIRDWEB_ENGINE_URL: z.string(),
+    REDIS_URL: z.string().url(),
     DATABASE_URL: z.string().url(),
     NODE_ENV: z
       .enum(["development", "test", "production"])
@@ -44,6 +45,7 @@ export const env = createEnv({
     AUTH_SLACK_STATE_SECRET: process.env.AUTH_SLACK_STATE_SECRET,
     THIRDWEB_ENGINE_ACCESS_TOKEN: process.env.THIRDWEB_ENGINE_ACCESS_TOKEN,
     THIRDWEB_ENGINE_URL: process.env.THIRDWEB_ENGINE_URL,
+    REDIS_URL: process.env.REDIS_URL,
     DATABASE_URL: process.env.DATABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
   },

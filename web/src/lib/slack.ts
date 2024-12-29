@@ -38,6 +38,7 @@ export type SlackPayload = {
   type: string,
   challenge: string,
   team_id: string,
+  event_id?: string,
   api_app_id?: string,
   authorizations?: Array<{
     team_id: string,
@@ -84,7 +85,7 @@ export const countTipIndicators = (text?: string): number => {
 };
 
 // Dummy function to handle tips
-export const tipUser = async (from: string, to: string[], amount: number) => {
+export const tipUsers = async (from: string, to: string[], amount: number) => {
   console.log(`User ${from} tipped ${amount} to users:`, to);
   // check if the sender has an account
   const senderAddress = await getAddressByUserId(from);
@@ -129,15 +130,6 @@ export const tipUser = async (from: string, to: string[], amount: number) => {
         console.log(`Deployed account for user ${toUser} at ${address}`);
       } else {
         console.log(`User ${toUser} has an existing account at ${address}`);
-      }
-
-      const isRegistered = await isAddressRegistered(address);
-      if (!isRegistered) {
-        console.log(`User ${toUser} is not registered`);
-        await registerAccount(address);
-        console.log(`Registered account for user ${toUser} at ${address}`);
-      } else {
-        console.log(`User ${toUser} is already registered`);
       }
     } catch (error) {
       console.error(`Error getting address for user ${toUser}:`, error);

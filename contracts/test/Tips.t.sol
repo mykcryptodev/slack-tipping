@@ -52,29 +52,18 @@ contract TipsTest is Test {
     }
 
     function testTipping() public {
-        // Register accounts
+        // Register sender account
         tips.registerAccount(alice);
-        tips.registerAccount(bob);
 
-        // Test successful tip
+        // Test successful tip to unregistered recipient
         vm.prank(alice);
         tips.tip(bob, alice, 1 * 10**18);
         assertEq(tips.balanceOf(bob), 1 * 10**18);
     }
 
     function testTipUnregisteredSender() public {
-        tips.registerAccount(bob);
-        
         vm.prank(alice);
         vm.expectRevert(SenderNotRegistered.selector);
-        tips.tip(bob, alice, 1 * 10**18);
-    }
-
-    function testTipUnregisteredRecipient() public {
-        tips.registerAccount(alice);
-        
-        vm.prank(alice);
-        vm.expectRevert(RecipientNotRegistered.selector);
         tips.tip(bob, alice, 1 * 10**18);
     }
 
@@ -88,7 +77,6 @@ contract TipsTest is Test {
 
     function testDailyTipLimit() public {
         tips.registerAccount(alice);
-        tips.registerAccount(bob);
 
         // Send max daily limit
         vm.prank(alice);
@@ -102,7 +90,6 @@ contract TipsTest is Test {
 
     function testTipLimitReset() public {
         tips.registerAccount(alice);
-        tips.registerAccount(bob);
 
         // Send max daily limit
         vm.prank(alice);
@@ -119,7 +106,6 @@ contract TipsTest is Test {
 
     function testTipOnBehalfOf() public {
         tips.registerAccount(alice);
-        tips.registerAccount(bob);
 
         // Tipper (with TIP_ON_BEHALF_OF_ROLE) tips on behalf of alice
         vm.prank(tipper);
@@ -129,7 +115,6 @@ contract TipsTest is Test {
 
     function testUnauthorizedTipOnBehalfOf() public {
         tips.registerAccount(alice);
-        tips.registerAccount(bob);
 
         // Charlie (without TIP_ON_BEHALF_OF_ROLE) tries to tip on behalf of alice
         vm.prank(charlie);

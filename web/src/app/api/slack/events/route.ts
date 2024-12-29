@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { type NextRequest } from "next/server";
-import { handleSlackInstallation, type SlackPayload, extractMentionedUsers, countTipIndicators, tipUser } from "~/lib/slack";
+import { handleSlackInstallation, type SlackPayload, extractMentionedUsers, countTipIndicators, tipUsers } from "~/lib/slack";
+import { isEventProcessed } from "~/lib/redis";
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json() as SlackPayload
+    const body = await req.json() as SlackPayload;
 
     console.log('Received Slack event:', JSON.stringify(body, null, 2));
 
@@ -15,6 +16,18 @@ export async function POST(req: NextRequest) {
 
     // Handle events
     if (body.type === 'event_callback' && body.team_id) {
+      // Check for duplicate events if event_id is present
+      if (body.event_id) {
+        if (await isEventProcessed(body.event_id)) {
+          console.log('Duplicate event detected, skipping:', body.event_id);
+          return NextResponse.json({ ok: true });
+        } else {
+          console.log('New event detected, processing:', body.event_id);
+        }
+      } else {
+        console.log('No event_id present, skipping deduplication check');
+      }
+
       // Handle installation events
       await handleSlackInstallation(body);
 
@@ -24,7 +37,7 @@ export async function POST(req: NextRequest) {
         const tipCount = countTipIndicators(body.event.text);
 
         if (mentionedUsers.length > 0 && tipCount > 0) {
-          await tipUser(body.event.user, mentionedUsers, tipCount);
+          await tipUsers(body.event.user, mentionedUsers, tipCount);
         }
       }
     }
