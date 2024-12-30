@@ -68,5 +68,5 @@ model SlackInstall {
   botToken          String?                       // The bot user token
   installedByUserId String?                       // Slack user ID who installed the app
   installedAt       DateTime @default(now())      // Timestamp of installation
-  enterpriseId      String?                       
+  enterpriseId      String?             
 }

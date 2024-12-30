@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { type NextRequest } from "next/server";
-import { handleSlackInstallation, type SlackPayload, extractMentionedUsers, countTipIndicators, tipUsers } from "~/lib/slack";
-import { isEventProcessed } from "~/lib/redis";
+import { handleSlackInstallation, type SlackPayload, extractMentionedUsers, countTipIndicators } from "~/lib/slack";
+import { tipUsers } from "~/lib/tips";
+import { isEventProcessed, setLoadingData } from "~/lib/redis";
 
 export async function POST(req: NextRequest) {
   try {
@@ -28,8 +29,12 @@ export async function POST(req: NextRequest) {
         console.log('No event_id present, skipping deduplication check');
       }
 
-      // Handle installation events
-      await handleSlackInstallation(body);
+      // Get the installation for this team
+      const installation = await handleSlackInstallation(body);
+      if (!installation?.botToken) {
+        console.error('No bot token found for team:', body.team_id);
+        return NextResponse.json({ error: 'No bot token found' }, { status: 400 });
+      }
 
       // Handle message events
       if (body.event?.type === 'message' && body.event.user && body.event.text && body.event_id) {
@@ -37,7 +42,18 @@ export async function POST(req: NextRequest) {
         const tipCount = countTipIndicators(body.event.text);
 
         if (mentionedUsers.length > 0 && tipCount > 0) {
-          await tipUsers(body.event.user, mentionedUsers, tipCount, body.event_id);
+          // Send loading message before processing tip
+          if (body.event.channel) {
+            const result = await tipUsers(body.event.user, mentionedUsers, tipCount, body.event_id);
+            if (result.queueIds.length > 0) {
+              await setLoadingData({
+                queueId: result.queueIds[0]!,
+                senderUserId: body.event.user,
+                receiverUserIds: mentionedUsers,
+                ttl: 300,
+              });
+            }
+          }
         }
       }
     }

@@ -19,7 +19,7 @@ export const sendBatchTxns = async (txns: { toAddress: string, data: string, val
 
   try {
     const response = await fetch(url, fetchOptions);
-    const data = await response.json() as { result: { queueId: string } };
+    const data = await response.json() as { result: { queueIds: string[] } };
     console.log('\x1b[33m%s\x1b[0m', `sendBatchTxns:`, JSON.stringify(data, null, 2));
     return data.result;
   } catch (error) {

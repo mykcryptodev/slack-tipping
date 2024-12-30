@@ -6,9 +6,15 @@ const redis = new Redis(env.REDIS_URL);
 
 // Key prefix for Slack event deduplication
 const SLACK_EVENT_PREFIX = 'slack:event:';
+const SLACK_LOADING_MESSAGE_PREFIX = 'slack:loading:message:';
 
 // TTL for deduplication keys (5 minutes)
 const DEDUP_TTL = 5 * 60;
+
+type LoadingMessageData = {
+  senderUserId: string;
+  receiverUserIds: string[];
+};
 
 /**
  * Checks if a Slack event has already been processed using Redis for deduplication.
@@ -43,6 +49,36 @@ export async function isEventProcessed(eventId: string): Promise<boolean> {
   // If result is null: key already exists (duplicate event)
   // If result is 'OK': key was set (new event)
   return result === null;
+}
+
+export async function setLoadingData({
+  queueId,
+  senderUserId,
+  receiverUserIds,
+  ttl,
+}: {
+  queueId: string;
+  senderUserId: string;
+  receiverUserIds: string[];
+  ttl: number;
+}) {
+  const key = SLACK_LOADING_MESSAGE_PREFIX + queueId;
+  await redis.set(key, JSON.stringify({ senderUserId, receiverUserIds }), 'EX', ttl);
+}
+
+export async function getLoadingData(queueId: string): Promise<LoadingMessageData | null> {
+  const key = SLACK_LOADING_MESSAGE_PREFIX + queueId;
+  const data = await redis.get(key);
+  if (!data) return null;
+  try {
+    const parsed = JSON.parse(data) as LoadingMessageData;
+    if (typeof parsed.senderUserId !== 'string' || !Array.isArray(parsed.receiverUserIds)) {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
 }
 
 export { redis }; 
