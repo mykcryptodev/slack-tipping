@@ -4,6 +4,7 @@ import { getLoadingData } from "~/lib/redis";
 import { app } from "~/lib/slack";
 import { db } from "~/server/db";
 import { type EngineWebhookPayload } from "~/types/engine";
+import { TIP_INDICATOR } from "~/constants";
 type User = {
   real_name?: string;
   profile?: { 
@@ -85,6 +86,28 @@ export async function POST(req: NextRequest) {
                   }
                   return name;
                 }).join(', ')}`
+              }
+            ]
+          },
+          {
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: `Amount: ${TIP_INDICATOR.repeat(messageData.tipAmount)} (${messageData.tipAmount})`
+            }
+          },
+          {
+            type: "actions",
+            elements: [
+              {
+                type: "button" as const,
+                text: {
+                  type: "plain_text" as const,
+                  text: "View Original Message",
+                  emoji: true
+                },
+                url: `slack://channel?team=${installation.teamId}&id=${messageData.channelId}&message=${messageData.messageTs}`,
+                action_id: "view_message"
               }
             ]
           },

@@ -14,6 +14,9 @@ const DEDUP_TTL = 5 * 60;
 type LoadingMessageData = {
   senderUserId: string;
   receiverUserIds: string[];
+  tipAmount: number;
+  channelId: string;
+  messageTs: string;  // Slack message timestamp for linking
 };
 
 /**
@@ -55,15 +58,26 @@ export async function setLoadingData({
   queueId,
   senderUserId,
   receiverUserIds,
+  tipAmount,
+  channelId,
+  messageTs,
   ttl,
 }: {
   queueId: string;
   senderUserId: string;
   receiverUserIds: string[];
+  tipAmount: number;
+  channelId: string;
+  messageTs: string;
   ttl: number;
 }) {
   const key = SLACK_LOADING_MESSAGE_PREFIX + queueId;
-  await redis.set(key, JSON.stringify({ senderUserId, receiverUserIds }), 'EX', ttl);
+  await redis.set(
+    key, 
+    JSON.stringify({ senderUserId, receiverUserIds, tipAmount, channelId, messageTs }), 
+    'EX', 
+    ttl
+  );
 }
 
 export async function getLoadingData(queueId: string): Promise<LoadingMessageData | null> {
@@ -72,7 +86,13 @@ export async function getLoadingData(queueId: string): Promise<LoadingMessageDat
   if (!data) return null;
   try {
     const parsed = JSON.parse(data) as LoadingMessageData;
-    if (typeof parsed.senderUserId !== 'string' || !Array.isArray(parsed.receiverUserIds)) {
+    if (
+      typeof parsed.senderUserId !== 'string' || 
+      !Array.isArray(parsed.receiverUserIds) ||
+      typeof parsed.tipAmount !== 'number' ||
+      typeof parsed.channelId !== 'string' ||
+      typeof parsed.messageTs !== 'string'
+    ) {
       return null;
     }
     return parsed;

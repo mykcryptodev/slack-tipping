@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { type NextRequest } from "next/server";
-import { CHAIN } from "~/constants";
+import { CHAIN, TIP_INDICATOR } from "~/constants";
 import { getLoadingData } from "~/lib/redis";
 import { app } from "~/lib/slack";
 import { db } from "~/server/db";
@@ -77,6 +77,38 @@ export async function POST(req: NextRequest) {
             }
           },
           {
+            type: "section",
+            text: {
+              type: "mrkdwn",
+              text: `Amount: ${TIP_INDICATOR.repeat(messageData.tipAmount)} (${messageData.tipAmount})`
+            }
+          },
+          {
+            type: "actions",
+            elements: [
+              {
+                type: "button" as const,
+                text: {
+                  type: "plain_text" as const,
+                  text: "View Message",
+                  emoji: true
+                },
+                url: `slack://channel?team=${installation.teamId}&id=${messageData.channelId}&message=${messageData.messageTs}`,
+                action_id: "view_message"
+              },
+              {
+                type: "button" as const,
+                text: {
+                  type: "plain_text" as const,
+                  text: `View on ${CHAIN.blockExplorers![0]!.name}`,
+                  emoji: true
+                },
+                url: `${CHAIN.blockExplorers![0]!.url}/tx/${body.transactionHash}`,
+                action_id: "view_transaction"
+              }
+            ]
+          },
+          {
             type: "context",
             elements: [
               ...receiverProfiles.map(profile => ({
@@ -95,21 +127,6 @@ export async function POST(req: NextRequest) {
               }
             ]
           },
-          {
-            type: "actions",
-            elements: [
-              {
-                type: "button" as const,
-                text: {
-                  type: "plain_text" as const,
-                  text: `View on ${CHAIN.blockExplorers![0]!.name}`,
-                  emoji: true
-                },
-                url: `${CHAIN.blockExplorers![0]!.url}/tx/${body.transactionHash}`,
-                action_id: "view_transaction"
-              }
-            ]
-          }
         ],
         text: `✅ Your tip has been sent successfully!` // Fallback text
       });
@@ -126,6 +143,38 @@ export async function POST(req: NextRequest) {
               }
             },
             {
+              type: "section",
+              text: {
+                type: "mrkdwn",
+                text: `Amount: ${TIP_INDICATOR.repeat(messageData.tipAmount)} (${messageData.tipAmount})`
+              }
+            },
+            {
+              type: "actions",
+              elements: [
+                {
+                  type: "button" as const,
+                  text: {
+                    type: "plain_text" as const,
+                    text: "View Message",
+                    emoji: true
+                  },
+                  url: `slack://channel?team=${installation.teamId}&id=${messageData.channelId}&message=${messageData.messageTs}`,
+                  action_id: "view_message"
+                },
+                {
+                  type: "button" as const,
+                  text: {
+                    type: "plain_text" as const,
+                    text: `View on ${CHAIN.blockExplorers![0]!.name}`,
+                    emoji: true
+                  },
+                  url: `${CHAIN.blockExplorers![0]!.url}/tx/${body.transactionHash}`,
+                  action_id: "view_transaction"
+                }
+              ]
+            },
+            {
               type: "context",
               elements: [
                 {
@@ -139,21 +188,6 @@ export async function POST(req: NextRequest) {
                 }
               ]
             },
-            {
-              type: "actions",
-              elements: [
-                {
-                  type: "button" as const,
-                  text: {
-                    type: "plain_text" as const,
-                    text: `View Transaction on ${CHAIN.blockExplorers![0]!.name}`,
-                    emoji: true
-                  },
-                  url: `${CHAIN.blockExplorers![0]!.url}/tx/${body.transactionHash}`,
-                  action_id: "view_transaction"
-                }
-              ]
-            }
           ],
           text: `✅ You received a tip from ${getUserNameFromProfile(senderProfile.user!)}!` // Fallback text
         });

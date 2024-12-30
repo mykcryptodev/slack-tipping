@@ -50,6 +50,9 @@ export async function POST(req: NextRequest) {
                 queueId: result.queueIds[0]!,
                 senderUserId: body.event.user,
                 receiverUserIds: mentionedUsers,
+                tipAmount: tipCount,
+                channelId: body.event.channel,
+                messageTs: body.event.ts!,
                 ttl: 300,
               });
             }

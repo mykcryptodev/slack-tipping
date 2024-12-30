@@ -53,6 +53,7 @@ export type SlackPayload = {
     channel?: string,
     text?: string,
     blocks?: SlackBlock[],
+    ts?: string,
   }
 };
 
