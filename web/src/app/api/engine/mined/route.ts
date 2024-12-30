@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { type NextRequest } from "next/server";
 import { CHAIN, TIP_INDICATOR } from "~/constants";
-import { getLoadingData } from "~/lib/redis";
 import { app } from "~/lib/slack";
-import { db } from "~/server/db";
 import { type EngineWebhookPayload } from "~/types/engine";
+import { getMessageAndInstallationData } from "../util";
 
 type User = {
   real_name?: string;
@@ -29,24 +28,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json() as EngineWebhookPayload;
     console.log('Received webhook:', JSON.stringify(body, null, 2));
 
-    // Only process mined transactions
-    if (body.status !== 'mined') {
-      return NextResponse.json({ ok: true });
-    }
-
-    // Get the loading message data from Redis
-    const messageData = await getLoadingData(body.queueId);
-    if (!messageData) {
-      console.log('No loading message found for queue ID:', body.queueId);
-      return NextResponse.json({ ok: true });
-    }
-
-    // Get the installation for this team
-    const installation = await db.slackInstall.findFirst();
-    if (!installation?.botToken) {
-      console.error('No bot token found');
-      return NextResponse.json({ error: 'No bot token found' }, { status: 400 });
-    }
+    const {messageData, installation} = await getMessageAndInstallationData(body, 'mined');
 
     // Update the message
     try {

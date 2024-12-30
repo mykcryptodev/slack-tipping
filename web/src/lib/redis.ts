@@ -11,7 +11,7 @@ const SLACK_LOADING_MESSAGE_PREFIX = 'slack:loading:message:';
 // TTL for deduplication keys (5 minutes)
 const DEDUP_TTL = 5 * 60;
 
-type LoadingMessageData = {
+export type LoadingMessageData = {
   senderUserId: string;
   receiverUserIds: string[];
   tipAmount: number;
