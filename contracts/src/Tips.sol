@@ -28,7 +28,8 @@ contract Tips is ERC20Base, PermissionsEnumerable {
     constructor(
         address _defaultAdmin,
         string memory _name,
-        string memory _symbol
+        string memory _symbol,
+        address engineBackendWallet
     )
     ERC20Base(
         _defaultAdmin,
@@ -39,6 +40,9 @@ contract Tips is ERC20Base, PermissionsEnumerable {
         _setupRole(DEFAULT_ADMIN_ROLE, _defaultAdmin);
         _setupRole(REGISTER_ROLE, _defaultAdmin);
         _setupRole(TIP_ON_BEHALF_OF_ROLE, _defaultAdmin);
+
+        _setupRole(TIP_ON_BEHALF_OF_ROLE, engineBackendWallet);
+        _setupRole(REGISTER_ROLE, engineBackendWallet);
     }
     
     function registerAccount(address account) external onlyRole(REGISTER_ROLE) {

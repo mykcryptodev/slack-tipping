@@ -32,12 +32,12 @@ export async function POST(req: NextRequest) {
       await handleSlackInstallation(body);
 
       // Handle message events
-      if (body.event?.type === 'message' && body.event.user && body.event.text) {
+      if (body.event?.type === 'message' && body.event.user && body.event.text && body.event_id) {
         const mentionedUsers = extractMentionedUsers(body.event.blocks);
         const tipCount = countTipIndicators(body.event.text);
 
         if (mentionedUsers.length > 0 && tipCount > 0) {
-          await tipUsers(body.event.user, mentionedUsers, tipCount);
+          await tipUsers(body.event.user, mentionedUsers, tipCount, body.event_id);
         }
       }
     }

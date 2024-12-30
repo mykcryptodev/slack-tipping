@@ -11,6 +11,7 @@ contract TipsTest is Test {
     address public bob;
     address public charlie;
     address public tipper;
+    address public engineBackendWallet;
 
     function setUp() public {
         admin = address(this);
@@ -18,9 +19,10 @@ contract TipsTest is Test {
         bob = makeAddr("bob");
         charlie = makeAddr("charlie");
         tipper = makeAddr("tipper");
+        engineBackendWallet = makeAddr("engineBackendWallet");
 
         // Deploy contract
-        tips = new Tips(admin, "Tips Token", "TIP");
+        tips = new Tips(admin, "Tips Token", "TIP", engineBackendWallet);
 
         // Give tipper the TIP_ON_BEHALF_OF_ROLE
         tips.grantRole(tips.TIP_ON_BEHALF_OF_ROLE(), tipper);
@@ -32,6 +34,9 @@ contract TipsTest is Test {
         assertTrue(tips.hasRole(tips.DEFAULT_ADMIN_ROLE(), admin));
         assertTrue(tips.hasRole(tips.REGISTER_ROLE(), admin));
         assertTrue(tips.hasRole(tips.TIP_ON_BEHALF_OF_ROLE(), tipper));
+        // Check engine backend wallet roles
+        assertTrue(tips.hasRole(tips.REGISTER_ROLE(), engineBackendWallet));
+        assertTrue(tips.hasRole(tips.TIP_ON_BEHALF_OF_ROLE(), engineBackendWallet));
     }
 
     function testRegistration() public {

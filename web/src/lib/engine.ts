@@ -1,9 +1,32 @@
-import { ACCOUNT_FACTORY, THIRDWEB_ENGINE_BACKEND_WALLET, TIP_TOKEN } from "~/constants";
-
-import { ACCOUNT_FACTORY_ADMIN } from "~/constants";
-
+import { ACCOUNT_FACTORY, ACCOUNT_FACTORY_ADMIN, CONTRACT, THIRDWEB_ENGINE_BACKEND_WALLET, TIP_TOKEN } from "~/constants";
+import { registerAccount as registerAccountTx, tip } from "~/thirdweb/84532/0xa2f642e706c44eac9ad11747edcfa7ab573d55e9";
 import { CHAIN } from "~/constants";
 import { env } from "~/env";
+import { encode, toWei } from "thirdweb";
+
+export const sendBatchTxns = async (txns: { toAddress: string, data: string, value: string }[], idempotencyKey: string) => {
+  const url = new URL(`${env.THIRDWEB_ENGINE_URL}/backend-wallet/${CHAIN.id}/send-transaction-batch`);
+  const fetchOptions = {
+    headers: {
+      'Authorization': `Bearer ${env.THIRDWEB_ENGINE_ACCESS_TOKEN}`,
+      'Content-Type': 'application/json',
+      'x-backend-wallet-address': THIRDWEB_ENGINE_BACKEND_WALLET,
+      'x-idempotency-key': idempotencyKey,
+    },
+    method: 'POST',
+    body: JSON.stringify(txns)
+  }
+
+  try {
+    const response = await fetch(url, fetchOptions);
+    const data = await response.json() as { result: { queueId: string } };
+    console.log('\x1b[33m%s\x1b[0m', `sendBatchTxns:`, JSON.stringify(data, null, 2));
+    return data.result;
+  } catch (error) {
+    console.error(`Error sending batch transactions:`, error);
+    throw error;
+  }
+}
 
 export const getAddressByUserId = async (userId: string) => {
   const baseUrl = new URL(`${env.THIRDWEB_ENGINE_URL}/contract/${CHAIN.id}/${ACCOUNT_FACTORY}/account-factory`);
@@ -52,45 +75,16 @@ export const isAddressRegistered = async (address: string) => {
   }
 }
 
-export const registerAccount = async (address: string) => {
-  const registerUrl = new URL(`${env.THIRDWEB_ENGINE_URL}/contract/${CHAIN.id}/${TIP_TOKEN}/write`);
-
-  const fetchOptions = {
-    headers: {
-      'Authorization': `Bearer ${env.THIRDWEB_ENGINE_ACCESS_TOKEN}`,
-      'Content-Type': 'application/json',
-      'x-backend-wallet-address': THIRDWEB_ENGINE_BACKEND_WALLET,
-      'x-idempotency-key': `register-account-${address}`,
-    },
-    method: 'POST',
-    body: JSON.stringify({
-      functionName: `registerAccount(address)`,
-      args: [address],
-      abi: [{
-        "inputs": [
-          {
-            "internalType": "address",
-            "name": "account",
-            "type": "address"
-          }
-        ],
-        "name": "registerAccount",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-      }]
-    })
+export const getRegisterAccountTx = async (address: string) => {
+  const tx = registerAccountTx({
+    contract: CONTRACT,
+    account: address,
+  });
+  return {
+    toAddress: TIP_TOKEN,
+    data: await encode(tx),
+    value: "0",
   };
-
-  try {
-    const response = await fetch(registerUrl, fetchOptions);
-    const data = await response.json() as { result: { queueId: string } };
-    console.log('\x1b[33m%s\x1b[0m', `registerAccount for address ${address}:`, JSON.stringify(data, null, 2));
-    return data.result;
-  } catch (error) {
-    console.error(`Error registering account for address ${address}:`, error);
-    throw error;
-  }
 }
 
 export const isAddressDeployed = async (address: string) => {
@@ -117,7 +111,7 @@ export const isAddressDeployed = async (address: string) => {
   }
 };
 
-export const deployAccount = async (userId: string) => {
+export const deployAccount = async (userId: string, idempotencyKey: string) => {
   const baseUrl = new URL(`${env.THIRDWEB_ENGINE_URL}/contract/${CHAIN.id}/${ACCOUNT_FACTORY}/account-factory`);
   const createAccountUrl = new URL(`${baseUrl}/create-account`);
 
@@ -126,7 +120,7 @@ export const deployAccount = async (userId: string) => {
       'Authorization': `Bearer ${env.THIRDWEB_ENGINE_ACCESS_TOKEN}`,
       'Content-Type': 'application/json',
       'x-backend-wallet-address': ACCOUNT_FACTORY_ADMIN,
-      'x-idempotency-key': `deploy-account-${userId}`,
+      'x-idempotency-key': idempotencyKey,
       'x-account-factory-address': ACCOUNT_FACTORY,
       'x-account-salt': userId
     },
@@ -150,4 +144,22 @@ export const deployAccount = async (userId: string) => {
     console.error(`Error deploying account for user ${userId}:`, error);
     throw error;
   }
+}
+
+export const getTipTxns = async (senderAddress: string, toAddresses: string[], amount: number) => {
+  const txns = [];
+  for (const toAddress of toAddresses) {
+    const tx = tip({
+      contract: CONTRACT,
+      to: toAddress,
+      from: senderAddress,
+      amount: toWei(amount.toString()),
+    });
+    txns.push({
+      toAddress: TIP_TOKEN,
+      data: await encode(tx),
+      value: "0",
+    });
+  }
+  return txns;
 }

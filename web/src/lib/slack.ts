@@ -2,7 +2,7 @@ import { App } from "@slack/bolt";
 import { TIP_INDICATOR } from "~/constants";
 import { env } from "~/env";
 import { db } from "~/server/db";
-import { deployAccount, getAddressByUserId, isAddressDeployed, isAddressRegistered, registerAccount } from "./engine";
+import { deployAccount, getAddressByUserId, getRegisterAccountTx, getTipTxns, isAddressDeployed, isAddressRegistered, sendBatchTxns } from "./engine";
 
 export const app = new App({
   signingSecret: env.AUTH_SLACK_SIGNING_SECRET,
@@ -84,8 +84,11 @@ export const countTipIndicators = (text?: string): number => {
   return (text.match(new RegExp(TIP_INDICATOR, 'g')) ?? []).length;
 };
 
-// Dummy function to handle tips
-export const tipUsers = async (from: string, to: string[], amount: number) => {
+// TODO: transactions are failing when the user needs to be registered even though we are bundling
+export const tipUsers = async (from: string, to: string[], amount: number, eventId: string) => {
+  // we will do one batch transaction for onchain activity (except for deploying accounts)
+  const txns = [];
+
   console.log(`User ${from} tipped ${amount} to users:`, to);
   // check if the sender has an account
   const senderAddress = await getAddressByUserId(from);
@@ -94,7 +97,7 @@ export const tipUsers = async (from: string, to: string[], amount: number) => {
   
   if (!senderIsDeployed) {
     console.log(`User ${from} has not deployed an account at ${senderAddress}`);
-    await deployAccount(from);
+    await deployAccount(from, `deploy-account-${from}-${eventId}`);
     console.log(`Deployed account for user ${from} at ${senderAddress}`);
   } else {
     console.log(`From user ${from} has an existing account at ${senderAddress}`);
@@ -104,13 +107,16 @@ export const tipUsers = async (from: string, to: string[], amount: number) => {
   const senderIsRegistered = await isAddressRegistered(senderAddress);
   if (!senderIsRegistered) {
     console.log(`User ${from} is not registered`);
-    await registerAccount(senderAddress);
+    const registerSenderTx = await getRegisterAccountTx(senderAddress);
+    txns.push(registerSenderTx);
     console.log(`Registered account for user ${from} at ${senderAddress}`);
   } else {
     console.log(`User ${from} is already registered`);
   }
 
   // tip each user
+  const addressesToTip: string[] = [];
+
   for (const toUser of to) {
     // user cannot tip themselves
     if (toUser === from) {
@@ -126,15 +132,22 @@ export const tipUsers = async (from: string, to: string[], amount: number) => {
       if (!isDeployed) {
         console.log(`User ${toUser} has not deployed an account at ${address}`);
         // no need to await this
-        void deployAccount(toUser);
+        void deployAccount(toUser, `deploy-account-${toUser}-${eventId}`);
         console.log(`Deployed account for user ${toUser} at ${address}`);
       } else {
         console.log(`User ${toUser} has an existing account at ${address}`);
       }
+      addressesToTip.push(address);
     } catch (error) {
       console.error(`Error getting address for user ${toUser}:`, error);
     }
   }
+
+  const tipTxns = await getTipTxns(senderAddress, addressesToTip, amount);
+  txns.push(...tipTxns);
+
+  // send all transactions in one batch
+  await sendBatchTxns(txns, eventId);
 };
 
 export const handleSlackInstallation = async (body: SlackPayload) => {
