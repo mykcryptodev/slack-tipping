@@ -2,7 +2,7 @@ import { ACCOUNT_FACTORY, ACCOUNT_FACTORY_ADMIN, CONTRACT, THIRDWEB_ENGINE_BACKE
 import { registerAccount as registerAccountTx, tip } from "~/thirdweb/84532/0xa2f642e706c44eac9ad11747edcfa7ab573d55e9";
 import { CHAIN } from "~/constants";
 import { env } from "~/env";
-import { encode, toWei } from "thirdweb";
+import { encode, toEther, toWei } from "thirdweb";
 
 export const sendBatchTxns = async (txns: { toAddress: string, data: string, value: string }[], idempotencyKey: string) => {
   const url = new URL(`${env.THIRDWEB_ENGINE_URL}/backend-wallet/${CHAIN.id}/send-transaction-batch`);
@@ -162,4 +162,57 @@ export const getTipTxns = async (senderAddress: string, toAddresses: string[], a
     });
   }
   return txns;
+}
+
+export const getTipsSentToday = async (address: string) => {
+  const tipsSentTodayUrl = new URL(`${env.THIRDWEB_ENGINE_URL}/contract/${CHAIN.id}/${TIP_TOKEN}/read`);
+  tipsSentTodayUrl.searchParams.set('functionName', 'tipsSentToday');
+  tipsSentTodayUrl.searchParams.set('args', address);
+
+  const fetchOptions = {
+    headers: {
+      Authorization: `Bearer ${env.THIRDWEB_ENGINE_ACCESS_TOKEN}`,
+    },
+    method: 'GET',
+  };
+
+  try {
+    const response = await fetch(tipsSentTodayUrl, fetchOptions);
+    const data = await response.json() as { result: number };
+    console.log('\x1b[33m%s\x1b[0m', `getTipsSentToday for address ${address}:`, JSON.stringify(data, null, 2));
+    return toEther(BigInt(data.result));
+  } catch (error) {
+    console.error(`Error getting tipsSentToday for address ${address}:`, error);
+    throw error;
+  }
+}
+
+export const getBalance = async (address: string) => {
+  const balanceUrl = new URL(`${env.THIRDWEB_ENGINE_URL}/contract/${CHAIN.id}/${TIP_TOKEN}/erc20/balance-of`);
+  balanceUrl.searchParams.set('wallet_address', address);
+
+  const fetchOptions = {
+    headers: {
+      Authorization: `Bearer ${env.THIRDWEB_ENGINE_ACCESS_TOKEN}`,
+    },
+    method: 'GET',
+  };
+
+  try {
+    const response = await fetch(balanceUrl, fetchOptions);
+    const data = await response.json() as { 
+      result: {
+        name: string;
+        symbol: string;
+        decimals: string;
+        value: string;
+        displayValue: string;
+      }
+    };
+    console.log('\x1b[33m%s\x1b[0m', `getBalance for address ${address}:`, JSON.stringify(data, null, 2));
+    return data.result;
+  } catch (error) {
+    console.error(`Error getting balance for address ${address}:`, error);
+    throw error;
+  }
 }

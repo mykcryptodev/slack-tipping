@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { type NextRequest } from "next/server";
-import { handleSlackInstallation, type SlackPayload, extractMentionedUsers, countTipIndicators } from "~/lib/slack";
+import { handleSlackInstallation, type SlackPayload, extractMentionedUsers, countTipIndicators, getSlackHomeView } from "~/lib/slack";
 import { tipUsers } from "~/lib/tips";
 import { isEventProcessed, setLoadingData } from "~/lib/redis";
 
@@ -34,6 +34,12 @@ export async function POST(req: NextRequest) {
       if (!installation?.botToken) {
         console.error('No bot token found for team:', body.team_id);
         return NextResponse.json({ error: 'No bot token found' }, { status: 400 });
+      }
+
+      // check if this is a home event
+      if (body.event?.type === 'app_home_opened') {
+        await getSlackHomeView(body.event.user!);
+        return NextResponse.json({ ok: true });
       }
 
       // Handle message events

@@ -1,7 +1,10 @@
 import { App } from "@slack/bolt";
-import { TIP_INDICATOR } from "~/constants";
+import { CHAIN, TIP_INDICATOR } from "~/constants";
 import { env } from "~/env";
 import { db } from "~/server/db";
+import { getBalance } from "./engine";
+import { getTipsSentToday } from "./engine";
+import { getAddressByUserId } from "./engine";
 
 export const app = new App({
   signingSecret: env.AUTH_SLACK_SIGNING_SECRET,
@@ -131,4 +134,113 @@ export const handleSlackInstallation = async (body: SlackPayload) => {
   }
 
   return installation;
+};
+
+export const getSlackHomeView = async (userId: string) => {
+  // Get user's blockchain address
+  const address = await getAddressByUserId(userId);
+  
+  // Get user's stats
+  const [tipsSentToday, balance] = await Promise.all([
+    getTipsSentToday(address),
+    getBalance(address)
+  ]);
+  const totalTipsReceived = parseInt(balance.displayValue);
+
+  // Get the installation for this team
+  const installation = await db.slackInstall.findFirst();
+  if (!installation?.botToken) {
+    console.error('No bot token found');
+    throw new Error('No bot token found');
+  }
+
+  // Publish the home view
+  const publishResult = await app.client.views.publish({
+    token: installation.botToken,
+    user_id: userId,
+    view: {
+      type: "home",
+      blocks: [
+        {
+          type: "header",
+          text: {
+            type: "plain_text",
+            text: "Your Tip Stats 📊",
+            emoji: true
+          }
+        },
+        {
+          type: "divider"
+        },
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: "*Tips Sent Today*"
+          }
+        },
+        {
+          type: "context",
+          elements: [
+            {
+              type: "mrkdwn",
+              text: `${TIP_INDICATOR.repeat(Number(tipsSentToday))} (${tipsSentToday})`
+            }
+          ]
+        },
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: "*Total Tips Received All Time*"
+          }
+        },
+        {
+          type: "context",
+          elements: [
+            {
+              type: "mrkdwn",
+              text: `${totalTipsReceived}`
+            }
+          ]
+        },
+        {
+          type: "divider"
+        },
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: "*Your Wallet Address*"
+          }
+        },
+        {
+          type: "context",
+          elements: [
+            {
+              type: "mrkdwn",
+              text: `\`${address}\``
+            }
+          ]
+        },
+        {
+          type: "actions",
+          elements: [
+            {
+              type: "button",
+              text: {
+                type: "plain_text",
+                text: `View on ${CHAIN.blockExplorers![0]!.name}`,
+                emoji: true
+              },
+              url: `${CHAIN.blockExplorers![0]!.url}/address/${address}`,
+              action_id: "view_on_explorer"
+            }
+          ]
+        }
+      ]
+    }
+  });
+
+  console.log('Published home view:', JSON.stringify(publishResult, null, 2));
 };
