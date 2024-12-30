@@ -15,25 +15,22 @@ export const tipUsers = async (from: string, to: string[], amount: number, event
 
   console.log(`User ${from} tipped ${amount} to users:`, to);
   // check if the sender has an account
-  const senderAddress = await getAddressByUserId(from);
-  const senderIsDeployed = await isAddressDeployed(senderAddress);
-  console.log(`Sender ${from} has an account at ${senderAddress} and is ${senderIsDeployed ? 'deployed' : 'not deployed'}`);
-  
-  if (!senderIsDeployed) {
-    console.log(`User ${from} has not deployed an account at ${senderAddress}`);
+  const { isDeployed, address } = await verifyDeploymentByUserId();
+  if (!isDeployed) {
+    console.log(`User ${from} has not deployed an account at ${address}`);
     await deployAccount(from, `deploy-account-${from}-${eventId}`);
-    console.log(`Deployed account for user ${from} at ${senderAddress}`);
+    console.log(`Deployed account for user ${from} at ${address}`);
   } else {
-    console.log(`From user ${from} has an existing account at ${senderAddress}`);
+    console.log(`From user ${from} has an existing account at ${address}`);
   }
 
   // check if the sender is registered
-  const senderIsRegistered = await isAddressRegistered(senderAddress);
+  const senderIsRegistered = await isAddressRegistered(address);
   if (!senderIsRegistered) {
     console.log(`User ${from} is not registered`);
-    const registerSenderTx = await getRegisterAccountTx(senderAddress);
+    const registerSenderTx = await getRegisterAccountTx(address);
     txns.push(registerSenderTx);
-    console.log(`Registered account for user ${from} at ${senderAddress}`);
+    console.log(`Registered account for user ${from} at ${address}`);
   } else {
     console.log(`User ${from} is already registered`);
   }
@@ -50,8 +47,7 @@ export const tipUsers = async (from: string, to: string[], amount: number, event
 
     console.log(`Getting address for user ${toUser}`);
     try {
-      const address = await getAddressByUserId(toUser);
-      const isDeployed = await isAddressDeployed(address);
+      const { isDeployed, address } = await verifyDeploymentByUserId();
       console.log(`Receiver ${toUser} has an account at ${address} and is ${isDeployed ? 'deployed' : 'not deployed'}`);
       if (!isDeployed) {
         console.log(`User ${toUser} has not deployed an account at ${address}`);
@@ -67,9 +63,16 @@ export const tipUsers = async (from: string, to: string[], amount: number, event
     }
   }
 
-  const tipTxns = await getTipTxns(senderAddress, addressesToTip, amount);
+  const tipTxns = await getTipTxns(address, addressesToTip, amount);
   txns.push(...tipTxns);
 
   // send all transactions in one batch
   return await sendBatchTxns(txns, eventId);
+
+  async function verifyDeploymentByUserId() {
+    const address = await getAddressByUserId(from);
+    const isDeployed = await isAddressDeployed(address);
+    console.log(`Sender ${from} has an account at ${address} and is ${isDeployed ? 'deployed' : 'not deployed'}`);
+    return { isDeployed, address };
+  }
 };
