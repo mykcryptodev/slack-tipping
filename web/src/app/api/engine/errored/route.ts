@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { type NextRequest } from "next/server";
-import { getLoadingData } from "~/lib/redis";
 import { app } from "~/lib/slack";
-import { db } from "~/server/db";
 import { type EngineWebhookPayload } from "~/types/engine";
 import { TIP_INDICATOR } from "~/constants";
 import { getMessageAndInstallationData } from "../util";
