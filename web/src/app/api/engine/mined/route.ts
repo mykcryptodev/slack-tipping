@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { type NextRequest } from "next/server";
+import { CHAIN } from "~/constants";
 import { getLoadingData } from "~/lib/redis";
 import { app } from "~/lib/slack";
 import { db } from "~/server/db";
@@ -93,6 +94,21 @@ export async function POST(req: NextRequest) {
                 }).join(', ')}`
               }
             ]
+          },
+          {
+            type: "actions",
+            elements: [
+              {
+                type: "button" as const,
+                text: {
+                  type: "plain_text" as const,
+                  text: `View on ${CHAIN.blockExplorers![0]!.name}`,
+                  emoji: true
+                },
+                url: `${CHAIN.blockExplorers![0]!.url}/tx/${body.transactionHash}`,
+                action_id: "view_transaction"
+              }
+            ]
           }
         ],
         text: `✅ Your tip has been sent successfully!` // Fallback text
@@ -120,6 +136,21 @@ export async function POST(req: NextRequest) {
                 {
                   type: "mrkdwn",
                   text: `Sent by *${getUserNameFromProfile(senderProfile.user!)}*`
+                }
+              ]
+            },
+            {
+              type: "actions",
+              elements: [
+                {
+                  type: "button" as const,
+                  text: {
+                    type: "plain_text" as const,
+                    text: `View Transaction on ${CHAIN.blockExplorers![0]!.name}`,
+                    emoji: true
+                  },
+                  url: `${CHAIN.blockExplorers![0]!.url}/tx/${body.transactionHash}`,
+                  action_id: "view_transaction"
                 }
               ]
             }
