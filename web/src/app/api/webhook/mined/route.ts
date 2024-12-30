@@ -7,7 +7,10 @@ import { type EngineWebhookPayload } from "~/types/engine";
 
 type User = {
   real_name?: string;
-  profile?: { display_name?: string };
+  profile?: { 
+    display_name?: string;
+    image_48?: string;
+  };
   name?: string;
   id?: string;
 };
@@ -73,16 +76,23 @@ export async function POST(req: NextRequest) {
             }
           },
           {
-            type: "section", 
-            text: {
-              type: "mrkdwn",
-              text: `Recipients: ${receiverProfiles.map(profile => `*${getUserNameFromProfile(profile.user!)}*`).map((name, i, arr) => {
-                if (i === arr.length - 1 && arr.length > 1) {
-                  return `and ${name}`;
-                }
-                return name;
-              }).join(', ')}`
-            }
+            type: "context",
+            elements: [
+              ...receiverProfiles.map(profile => ({
+                type: "image" as const,
+                image_url: profile.user?.profile?.image_48 ?? "https://api.slack.com/img/blocks/bkb_template_images/profile_1.png",
+                alt_text: getUserNameFromProfile(profile.user!)
+              })),
+              {
+                type: "mrkdwn" as const,
+                text: `Recipients: ${receiverProfiles.map(profile => `*${getUserNameFromProfile(profile.user!)}*`).map((name, i, arr) => {
+                  if (i === arr.length - 1 && arr.length > 1) {
+                    return `and ${name}`;
+                  }
+                  return name;
+                }).join(', ')}`
+              }
+            ]
           }
         ],
         text: `✅ Your tip has been sent successfully!` // Fallback text
@@ -100,11 +110,18 @@ export async function POST(req: NextRequest) {
               }
             },
             {
-              type: "section",
-              text: {
-                type: "mrkdwn", 
-                text: `Sent by *${getUserNameFromProfile(senderProfile.user!)}*`
-              }
+              type: "context",
+              elements: [
+                {
+                  type: "image" as const,
+                  image_url: senderProfile.user?.profile?.image_48 ?? "https://api.slack.com/img/blocks/bkb_template_images/profile_1.png",
+                  alt_text: getUserNameFromProfile(senderProfile.user!)
+                },
+                {
+                  type: "mrkdwn",
+                  text: `Sent by *${getUserNameFromProfile(senderProfile.user!)}*`
+                }
+              ]
             }
           ],
           text: `✅ You received a tip from ${getUserNameFromProfile(senderProfile.user!)}!` // Fallback text
