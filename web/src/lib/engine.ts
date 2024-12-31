@@ -1,5 +1,5 @@
 import { ACCOUNT_FACTORY, ACCOUNT_FACTORY_ADMIN, CONTRACT, THIRDWEB_ENGINE_BACKEND_WALLET, TIP_TOKEN } from "~/constants";
-import { registerAccount as registerAccountTx, tip } from "~/thirdweb/84532/0xa2f642e706c44eac9ad11747edcfa7ab573d55e9";
+import { registerAccount as registerAccountTx, tipMany } from "~/thirdweb/84532/0xb18627080be9b71debc1e85daa5789f51345933e";
 import { CHAIN } from "~/constants";
 import { env } from "~/env";
 import { encode, toHex, toEther, toWei } from "thirdweb";
@@ -116,17 +116,7 @@ export const deployAccount = async ({
 }: {
   userId: string, idempotencyKey: string
 }) => {
-  const baseUrl = new URL(`${env.THIRDWEB_ENGINE_URL}/contract/${CHAIN.id}/${ACCOUNT_FACTORY}/account-factory`);
-  const createAccountUrl = new URL(`${baseUrl}/create-account`);
-
-  console.log(`
-    
-    🌈🌈🌈🌈🌈🌈🌈🌈🌈
-    === USER ID ===
-    ${userId}
-    
-    
-    `)
+  const createAccountUrl = new URL(`${env.THIRDWEB_ENGINE_URL}/contract/${CHAIN.id}/${ACCOUNT_FACTORY}/account-factory/create-account`);
 
   const fetchOptions = {
     headers: {
@@ -160,22 +150,18 @@ export const deployAccount = async ({
   }
 }
 
-export const getTipTxns = async (senderAddress: string, toAddresses: string[], amount: number) => {
-  const txns = [];
-  for (const toAddress of toAddresses) {
-    const tx = tip({
-      contract: CONTRACT,
-      to: toAddress,
-      from: senderAddress,
-      amount: toWei(amount.toString()),
-    });
-    txns.push({
-      toAddress: TIP_TOKEN,
-      data: await encode(tx),
-      value: "0",
-    });
-  }
-  return txns;
+export const getTipTxn = async (senderAddress: string, toAddresses: string[], amount: number) => {
+  const tipManyTxn = tipMany({
+    contract: CONTRACT,
+    to: toAddresses,
+    from: senderAddress,
+    amount: toWei(amount.toString()),
+  });
+  return {
+    toAddress: TIP_TOKEN,
+    data: await encode(tipManyTxn),
+    value: '0'
+  };
 }
 
 export const getTipsSentToday = async (address: string) => {

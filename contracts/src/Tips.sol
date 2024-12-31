@@ -61,9 +61,19 @@ contract Tips is ERC20Base, PermissionsEnumerable {
             lastTipReset[account] = block.timestamp;
         }
     }
-    
+
     function tip(address to, address from, uint256 amount) external {
-        if (!isRegistered[from]) revert SenderNotRegistered();
+        _tip(to, from, amount);
+    }
+
+    function tipMany(address[] calldata to, address from, uint256 amount) external {
+        for (uint256 i = 0; i < to.length; i++) {
+            _tip(to[i], from, amount);
+        }
+    }
+    
+    function _tip(address to, address from, uint256 amount) internal {
+        if (!isRegistered[from] && !hasRole(TIP_ON_BEHALF_OF_ROLE, msg.sender)) revert SenderNotRegistered();
         if (from == to) revert CannotTipYourself();
         // msg.sender must be the from or have the TIP_ON_BEHALF_OF_ROLE
         if (msg.sender != from && !hasRole(TIP_ON_BEHALF_OF_ROLE, msg.sender)) revert SenderNotAuthorized();

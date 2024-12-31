@@ -67,6 +67,7 @@ contract TipsTest is Test {
     }
 
     function testTipUnregisteredSender() public {
+        // Should still fail when a non-TIP_ON_BEHALF_OF_ROLE tries to tip from unregistered account
         vm.prank(alice);
         vm.expectRevert(SenderNotRegistered.selector);
         tips.tip(bob, alice, 1 * 10**18);
@@ -125,5 +126,91 @@ contract TipsTest is Test {
         vm.prank(charlie);
         vm.expectRevert(SenderNotAuthorized.selector);
         tips.tip(bob, alice, 1 * 10**18);
+    }
+
+    function testTipManySuccess() public {
+        tips.registerAccount(alice);
+        
+        address[] memory recipients = new address[](2);
+        recipients[0] = bob;
+        recipients[1] = charlie;
+
+        // Test successful tips to multiple recipients
+        vm.prank(alice);
+        tips.tipMany(recipients, alice, 1 * 10**18);
+
+        assertEq(tips.balanceOf(bob), 1 * 10**18);
+        assertEq(tips.balanceOf(charlie), 1 * 10**18);
+        assertEq(tips.tipsSentToday(alice), 2 * 10**18);
+    }
+
+    function testTipManyDailyLimit() public {
+        tips.registerAccount(alice);
+        
+        address[] memory recipients = new address[](3);
+        recipients[0] = bob;
+        recipients[1] = charlie;
+        recipients[2] = tipper;
+
+        // Try to tip 2 tokens each to 3 recipients (6 total, exceeding 5 token daily limit)
+        vm.prank(alice);
+        vm.expectRevert(DailyTipLimitExceeded.selector);
+        tips.tipMany(recipients, alice, 2 * 10**18);
+    }
+
+    function testTipManyUnregisteredSender() public {
+        address[] memory recipients = new address[](2);
+        recipients[0] = bob;
+        recipients[1] = charlie;
+
+        // Should fail when a non-TIP_ON_BEHALF_OF_ROLE tries to tip from unregistered account
+        vm.prank(alice);
+        vm.expectRevert(SenderNotRegistered.selector);
+        tips.tipMany(recipients, alice, 1 * 10**18);
+    }
+
+    function testTipManyOnBehalfOf() public {
+        tips.registerAccount(alice);
+        
+        address[] memory recipients = new address[](2);
+        recipients[0] = bob;
+        recipients[1] = charlie;
+
+        // Tipper (with TIP_ON_BEHALF_OF_ROLE) tips on behalf of alice to multiple recipients
+        vm.prank(tipper);
+        tips.tipMany(recipients, alice, 1 * 10**18);
+
+        assertEq(tips.balanceOf(bob), 1 * 10**18);
+        assertEq(tips.balanceOf(charlie), 1 * 10**18);
+    }
+
+    function testExternalTipStillWorks() public {
+        tips.registerAccount(alice);
+
+        // Test that the external tip function still works as before
+        vm.prank(alice);
+        tips.tip(bob, alice, 1 * 10**18);
+        assertEq(tips.balanceOf(bob), 1 * 10**18);
+        assertEq(tips.tipsSentToday(alice), 1 * 10**18);
+    }
+
+    function testTipOnBehalfOfUnregisteredSender() public {
+        // Tipper (with TIP_ON_BEHALF_OF_ROLE) should be able to tip on behalf of unregistered account
+        vm.prank(tipper);
+        tips.tip(bob, alice, 1 * 10**18);
+        assertEq(tips.balanceOf(bob), 1 * 10**18);
+    }
+
+    function testTipManyOnBehalfOfUnregisteredSender() public {
+        address[] memory recipients = new address[](2);
+        recipients[0] = bob;
+        recipients[1] = charlie;
+
+        // Tipper (with TIP_ON_BEHALF_OF_ROLE) should be able to tip on behalf of unregistered account
+        vm.prank(tipper);
+        tips.tipMany(recipients, alice, 1 * 10**18);
+
+        assertEq(tips.balanceOf(bob), 1 * 10**18);
+        assertEq(tips.balanceOf(charlie), 1 * 10**18);
     }
 }

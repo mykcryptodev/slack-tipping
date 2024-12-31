@@ -2195,6 +2195,65 @@ export function tip(
 
 
 /**
+ * Represents the parameters for the "tipMany" function.
+ */
+export type TipManyParams = {
+  to: AbiParameterToPrimitiveType<{"internalType":"address[]","name":"to","type":"address[]"}>
+from: AbiParameterToPrimitiveType<{"internalType":"address","name":"from","type":"address"}>
+amount: AbiParameterToPrimitiveType<{"internalType":"uint256","name":"amount","type":"uint256"}>
+};
+
+/**
+ * Calls the "tipMany" function on the contract.
+ * @param options - The options for the "tipMany" function.
+ * @returns A prepared transaction object.
+ * @example
+ * ```
+ * import { tipMany } from "TODO";
+ *
+ * const transaction = tipMany({
+ *  to: ...,
+ *  from: ...,
+ *  amount: ...,
+ * });
+ *
+ * // Send the transaction
+ * ...
+ *
+ * ```
+ */
+export function tipMany(
+  options: BaseTransactionOptions<TipManyParams>
+) {
+  return prepareContractCall({
+    contract: options.contract,
+    method: [
+  "0x3d7f302d",
+  [
+    {
+      "internalType": "address[]",
+      "name": "to",
+      "type": "address[]"
+    },
+    {
+      "internalType": "address",
+      "name": "from",
+      "type": "address"
+    },
+    {
+      "internalType": "uint256",
+      "name": "amount",
+      "type": "uint256"
+    }
+  ],
+  []
+],
+    params: [options.to, options.from, options.amount]
+  });
+};
+
+
+/**
  * Represents the parameters for the "transfer" function.
  */
 export type TransferParams = {

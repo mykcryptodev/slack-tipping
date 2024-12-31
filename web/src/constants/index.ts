@@ -3,10 +3,10 @@ import { baseSepolia } from "thirdweb/chains";
 import { env } from "~/env";
 
 export const CHAIN = baseSepolia;
-export const ACCOUNT_FACTORY = "0x9e351f4cbf336d2d59e719a5355c564a88ec19ea";
-export const ACCOUNT_FACTORY_ADMIN = "0x9036464e4ecD2d40d21EE38a0398AEdD6805a09B";
-export const THIRDWEB_ENGINE_BACKEND_WALLET = "0x9036464e4ecD2d40d21EE38a0398AEdD6805a09B";
-export const TIP_TOKEN = "0x216665E6f1d9d6C403e39a484f6031cBAADC671E";
+export const ACCOUNT_FACTORY = "0x9153DbD27d9895BD1ca2839D2Dd0A7E68eE2e24f";
+export const ACCOUNT_FACTORY_ADMIN = "0x14550cc02BFB53c0B6f410D4C43f109cc2Ca1142";
+export const THIRDWEB_ENGINE_BACKEND_WALLET = "0x14550cc02BFB53c0B6f410D4C43f109cc2Ca1142";
+export const TIP_TOKEN = "0x90331b4b52a1e4f32adba4fcdc7c623d9606fc77";
 export const TIP_INDICATOR = ":taco:";
 export const CLIENT = createThirdwebClient({
   secretKey: env.THIRDWEB_SECRET_KEY,

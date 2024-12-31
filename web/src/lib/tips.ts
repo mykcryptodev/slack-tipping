@@ -1,11 +1,11 @@
 import { 
   sendBatchTxns,
-  getTipTxns,
   getRegisterAccountTx,
   isAddressRegistered,
   getAddressByUserId,
   isAddressDeployed,
-  deployAccount
+  deployAccount,
+  getTipTxn
 } from "./engine";
 
 // TODO: transactions are failing when the user needs to be registered even though we are bundling
@@ -59,11 +59,10 @@ export const tipUsers = async (from: string, to: string[], amount: number, event
       if (!isDeployed) {
         console.log(`User ${toUser} has not deployed an account at ${address}`);
         // no need to await this
-        const { deployedAddress } = await deployAccount({
+        void deployAccount({
           userId: toUser,
           idempotencyKey: `deploy-account-${toUser}-${eventId}`
         });
-        console.log(`Deployed account for user ${toUser} at ${deployedAddress}`);
       } else {
         console.log(`User ${toUser} has an existing account at ${address}`);
       }
@@ -73,9 +72,9 @@ export const tipUsers = async (from: string, to: string[], amount: number, event
     }
   }
 
-  const tipTxns = await getTipTxns(senderAddress, addressesToTip, amount);
-  txns.push(...tipTxns);
+  const tipTxn = await getTipTxn(senderAddress, addressesToTip, amount);
+  txns.push(tipTxn);
 
   // send all transactions in one batch
-  return await sendBatchTxns(txns, eventId);
+  return await sendBatchTxns(txns, `tip-${eventId}`);
 };
