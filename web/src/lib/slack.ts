@@ -155,7 +155,7 @@ export const getSlackHomeView = async (userId: string) => {
   }
 
   // Publish the home view
-  const publishResult = await app.client.views.publish({
+  await app.client.views.publish({
     token: installation.botToken,
     user_id: userId,
     view: {
@@ -237,10 +237,74 @@ export const getSlackHomeView = async (userId: string) => {
               action_id: "view_on_explorer"
             }
           ]
-        }
+        },
+        {
+          type: "divider"
+        },
+        {
+          type: "input",
+          block_id: "withdrawal_address",
+          label: {
+            type: "plain_text",
+            text: "Withdrawal Address",
+            emoji: true
+          },
+          element: {
+            type: "plain_text_input",
+            action_id: "withdrawal_address_input",
+            placeholder: {
+              type: "plain_text",
+              text: "Enter the address where you want to withdraw your tacos",
+              emoji: true
+            }
+          },
+          hint: {
+            type: "plain_text",
+            text: "This address will be used when you choose to withdraw your tacos",
+            emoji: true
+          }
+        },
+        {
+          type: "input",
+          block_id: "withdrawal_amount",
+          label: {
+            type: "plain_text",
+            text: "Amount of Tacos",
+            emoji: true
+          },
+          element: {
+            type: "number_input",
+            action_id: "withdrawal_amount_input",
+            is_decimal_allowed: false,
+            min_value: "1",
+            placeholder: {
+              type: "plain_text",
+              text: "Enter the number of tacos to withdraw",
+              emoji: true
+            }
+          },
+          hint: {
+            type: "plain_text",
+            text: `You have ${totalTipsReceived} tacos available to withdraw`,
+            emoji: true
+          }
+        },
+        {
+          type: "actions",
+          elements: [
+            {
+              type: "button",
+              text: {
+                type: "plain_text",
+                text: "Withdraw Tacos",
+                emoji: true
+              },
+              style: "primary",
+              action_id: "withdraw_tacos"
+            }
+          ]
+        },
       ]
     }
   });
-
-  console.log('Published home view:', JSON.stringify(publishResult, null, 2));
 };

@@ -26,8 +26,6 @@ const getUserNameFromProfile = (profile: User) => {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json() as EngineWebhookPayload;
-    console.log('Received webhook:', JSON.stringify(body, null, 2));
-
     // Only process errored transactions
     if (body.status !== 'errored') {
       return NextResponse.json({ ok: true });

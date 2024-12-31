@@ -2,7 +2,7 @@ import { ACCOUNT_FACTORY, ACCOUNT_FACTORY_ADMIN, CONTRACT, THIRDWEB_ENGINE_BACKE
 import { registerAccount as registerAccountTx, tip } from "~/thirdweb/84532/0xa2f642e706c44eac9ad11747edcfa7ab573d55e9";
 import { CHAIN } from "~/constants";
 import { env } from "~/env";
-import { encode, toEther, toWei } from "thirdweb";
+import { encode, toHex, toEther, toWei } from "thirdweb";
 
 export const sendBatchTxns = async (txns: { toAddress: string, data: string, value: string }[], idempotencyKey: string) => {
   const url = new URL(`${env.THIRDWEB_ENGINE_URL}/backend-wallet/${CHAIN.id}/send-transaction-batch`);
@@ -87,11 +87,11 @@ export const getRegisterAccountTx = async (address: string) => {
   };
 }
 
-export const isAddressDeployed = async (address: string) => {
+export const isAddressDeployed = async (userId: string) => {
   const baseUrl = new URL(`${env.THIRDWEB_ENGINE_URL}/contract/${CHAIN.id}/${ACCOUNT_FACTORY}/account-factory`);
   const isDeployedUrl = new URL(`${baseUrl}/is-account-deployed`);
   isDeployedUrl.searchParams.set('adminAddress', ACCOUNT_FACTORY_ADMIN);
-  isDeployedUrl.searchParams.set('address', address);
+  isDeployedUrl.searchParams.set('extraData', toHex(userId));
 
   const fetchOptions = {
     headers: {
@@ -103,17 +103,30 @@ export const isAddressDeployed = async (address: string) => {
   try {
     const response = await fetch(isDeployedUrl, fetchOptions);
     const data = await response.json() as { result: boolean };
-    console.log('\x1b[33m%s\x1b[0m', `isDeployed for address ${address}:`, JSON.stringify(data, null, 2));
+    console.log('\x1b[33m%s\x1b[0m', `isDeployed for userId ${userId}:`, JSON.stringify(data, null, 2));
     return data.result;
   } catch (error) {
-    console.error(`Error getting isDeployed for address ${address}:`, error);
+    console.error(`Error getting isDeployed for userId ${userId}:`, error);
     throw error;
   }
 };
 
-export const deployAccount = async (userId: string, idempotencyKey: string) => {
+export const deployAccount = async ({
+  userId, idempotencyKey
+}: {
+  userId: string, idempotencyKey: string
+}) => {
   const baseUrl = new URL(`${env.THIRDWEB_ENGINE_URL}/contract/${CHAIN.id}/${ACCOUNT_FACTORY}/account-factory`);
   const createAccountUrl = new URL(`${baseUrl}/create-account`);
+
+  console.log(`
+    
+    🌈🌈🌈🌈🌈🌈🌈🌈🌈
+    === USER ID ===
+    ${userId}
+    
+    
+    `)
 
   const fetchOptions = {
     headers: {
@@ -127,6 +140,7 @@ export const deployAccount = async (userId: string, idempotencyKey: string) => {
     method: 'POST',
     body: JSON.stringify({
       adminAddress: ACCOUNT_FACTORY_ADMIN,
+      extraData: userId,
     })
   };
 
@@ -213,6 +227,41 @@ export const getBalance = async (address: string) => {
     return data.result;
   } catch (error) {
     console.error(`Error getting balance for address ${address}:`, error);
+    throw error;
+  }
+}
+
+export const transferTips = async ({
+  senderAddress, toAddress, amount, idempotencyKey, userId
+}: {
+  senderAddress: string, toAddress: string, amount: string, idempotencyKey: string, userId: string
+}) => {
+  const transferUrl = new URL(`${env.THIRDWEB_ENGINE_URL}/contract/${CHAIN.id}/${TIP_TOKEN}/erc20/transfer`);
+
+  const fetchOptions = {
+    headers: {
+      Authorization: `Bearer ${env.THIRDWEB_ENGINE_ACCESS_TOKEN}`,
+      'Content-Type': 'application/json',
+      'x-backend-wallet-address': THIRDWEB_ENGINE_BACKEND_WALLET,
+      'x-account-address': senderAddress,
+      'x-idempotency-key': idempotencyKey,
+      'x-account-factory-address': ACCOUNT_FACTORY,
+      'x-account-salt': userId,
+    },
+    method: 'POST',
+    body: JSON.stringify({
+      toAddress,
+      amount,
+    })
+  };
+
+  try {
+    const response = await fetch(transferUrl, fetchOptions);
+    const data = await response.json() as { result: { queueId: string } };
+    console.log('\x1b[33m%s\x1b[0m', `transferTips for address ${senderAddress} to ${toAddress} amount ${amount}:`, JSON.stringify(data, null, 2));
+    return data.result;
+  } catch (error) {
+    console.error(`Error transferring tips for address ${senderAddress} to ${toAddress} amount ${amount}:`, error);
     throw error;
   }
 }

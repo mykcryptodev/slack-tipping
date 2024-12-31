@@ -16,13 +16,16 @@ export const tipUsers = async (from: string, to: string[], amount: number, event
   console.log(`User ${from} tipped ${amount} to users:`, to);
   // check if the sender has an account
   const senderAddress = await getAddressByUserId(from);
-  const senderIsDeployed = await isAddressDeployed(senderAddress);
+  const senderIsDeployed = await isAddressDeployed(from);
   console.log(`Sender ${from} has an account at ${senderAddress} and is ${senderIsDeployed ? 'deployed' : 'not deployed'}`);
   
   if (!senderIsDeployed) {
     console.log(`User ${from} has not deployed an account at ${senderAddress}`);
-    await deployAccount(from, `deploy-account-${from}-${eventId}`);
-    console.log(`Deployed account for user ${from} at ${senderAddress}`);
+    const { deployedAddress } = await deployAccount({
+      userId: from,
+      idempotencyKey: `deploy-account-${from}-${eventId}`
+    });
+    console.log(`Deployed account for user ${from} at ${deployedAddress}`);
   } else {
     console.log(`From user ${from} has an existing account at ${senderAddress}`);
   }
@@ -51,13 +54,16 @@ export const tipUsers = async (from: string, to: string[], amount: number, event
     console.log(`Getting address for user ${toUser}`);
     try {
       const address = await getAddressByUserId(toUser);
-      const isDeployed = await isAddressDeployed(address);
+      const isDeployed = await isAddressDeployed(toUser);
       console.log(`Receiver ${toUser} has an account at ${address} and is ${isDeployed ? 'deployed' : 'not deployed'}`);
       if (!isDeployed) {
         console.log(`User ${toUser} has not deployed an account at ${address}`);
         // no need to await this
-        void deployAccount(toUser, `deploy-account-${toUser}-${eventId}`);
-        console.log(`Deployed account for user ${toUser} at ${address}`);
+        const { deployedAddress } = await deployAccount({
+          userId: toUser,
+          idempotencyKey: `deploy-account-${toUser}-${eventId}`
+        });
+        console.log(`Deployed account for user ${toUser} at ${deployedAddress}`);
       } else {
         console.log(`User ${toUser} has an existing account at ${address}`);
       }

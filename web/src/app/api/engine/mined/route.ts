@@ -27,7 +27,6 @@ const getUserNameFromProfile = (profile: User) => {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json() as EngineWebhookPayload;
-    console.log('Received webhook:', JSON.stringify(body, null, 2));
 
     // Only process mined transactions
     if (body.status !== 'mined') {
@@ -65,7 +64,7 @@ export async function POST(req: NextRequest) {
         })
       ]);
       // DM the sender and all the receivers
-      const result = await app.client.chat.postMessage({
+      await app.client.chat.postMessage({
         token: installation.botToken,
         channel: messageData.senderUserId,
         blocks: [
@@ -192,7 +191,6 @@ export async function POST(req: NextRequest) {
           text: `✅ You received a tip from ${getUserNameFromProfile(senderProfile.user!)}!` // Fallback text
         });
       }
-      console.log('Updated message:', result);
     } catch (error) {
       console.error('Error updating message:', JSON.stringify(error, null, 2));
     }

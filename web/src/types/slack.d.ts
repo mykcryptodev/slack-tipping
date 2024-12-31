@@ -1,4 +1,4 @@
-export type SlackInteractivityPayload = {
+export interface SlackInteractivityPayload {
   type: string;
   user: {
     id: string;
@@ -10,9 +10,7 @@ export type SlackInteractivityPayload = {
   token: string;
   container: {
     type: string;
-    message_ts: string;
-    channel_id: string;
-    is_ephemeral: boolean;
+    view_id: string;
   };
   trigger_id: string;
   team: {
@@ -21,50 +19,36 @@ export type SlackInteractivityPayload = {
   };
   enterprise: null;
   is_enterprise_install: boolean;
-  channel: {
+  view?: {
     id: string;
-    name: string;
-  };
-  message: {
-    user: string;
+    team_id: string;
     type: string;
-    ts: string;
-    bot_id: string;
-    app_id: string;
-    text: string;
-    team: string;
-    blocks: Array<{
-      type: string;
-      block_id: string;
-      text?: {
-        type: string;
-        text: string;
-        verbatim: boolean;
+    state: {
+      values: {
+        withdrawal_address: {
+          withdrawal_address_input: {
+            type: string;
+            value: string;
+          };
+        };
+        withdrawal_amount: {
+          withdrawal_amount_input: {
+            type: string;
+            value: string;
+          };
+        };
       };
-      elements?: Array<{
-        type: string;
-        image_url?: string;
-        alt_text?: string;
-        text?: string;
-        action_id?: string;
-        url?: string;
-        verbatim?: boolean;
-      }>;
-    }>;
+    };
   };
-  state: {
-    values: Record<string, unknown>;
-  };
-  response_url: string;
-  actions: Array<{
+  actions?: Array<{
     action_id: string;
     block_id: string;
-    text: {
+    text?: {
       type: string;
       text: string;
-      emoji: boolean;
+      emoji?: boolean;
     };
     type: string;
     action_ts: string;
   }>;
-};
+}
