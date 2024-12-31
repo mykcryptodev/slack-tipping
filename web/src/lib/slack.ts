@@ -5,6 +5,8 @@ import { db } from "~/server/db";
 import { getBalance } from "./engine";
 import { getTipsSentToday } from "./engine";
 import { getAddressByUserId } from "./engine";
+import { getAllTimeTippedCount } from "./ghost";
+import { toEther } from "thirdweb/utils";
 
 export const app = new App({
   signingSecret: env.AUTH_SLACK_SIGNING_SECRET,
@@ -145,7 +147,7 @@ export const getSlackHomeView = async (userId: string) => {
     getTipsSentToday(address),
     getBalance(address)
   ]);
-  const totalTipsReceived = parseInt(balance.displayValue);
+  const totalTipsReceived = await getAllTimeTippedCount({ address });
 
   // Get the installation for this team
   const installation = await db.slackInstall.findFirst();
@@ -200,7 +202,7 @@ export const getSlackHomeView = async (userId: string) => {
           elements: [
             {
               type: "mrkdwn",
-              text: `${totalTipsReceived}`
+              text: `${toEther(BigInt(totalTipsReceived))}`
             }
           ]
         },
@@ -285,7 +287,7 @@ export const getSlackHomeView = async (userId: string) => {
           },
           hint: {
             type: "plain_text",
-            text: `You have ${totalTipsReceived} tacos available to withdraw`,
+            text: `You have ${toEther(BigInt(balance.value))} tacos available to withdraw`,
             emoji: true
           }
         },

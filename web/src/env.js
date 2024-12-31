@@ -18,6 +18,8 @@ export const env = createEnv({
     THIRDWEB_ENGINE_ACCESS_TOKEN: z.string(),
     THIRDWEB_ENGINE_URL: z.string(),
     THIRDWEB_SECRET_KEY: z.string(),
+    GHOST_API_KEY: z.string(),
+    GHOST_API_URL: z.string(),
     REDIS_URL: z.string().url(),
     DATABASE_URL: z.string().url(),
     NODE_ENV: z
@@ -47,6 +49,8 @@ export const env = createEnv({
     THIRDWEB_ENGINE_ACCESS_TOKEN: process.env.THIRDWEB_ENGINE_ACCESS_TOKEN,
     THIRDWEB_ENGINE_URL: process.env.THIRDWEB_ENGINE_URL,
     THIRDWEB_SECRET_KEY: process.env.THIRDWEB_SECRET_KEY,
+    GHOST_API_KEY: process.env.GHOST_API_KEY,
+    GHOST_API_URL: process.env.GHOST_API_URL,
     REDIS_URL: process.env.REDIS_URL,
     DATABASE_URL: process.env.DATABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
