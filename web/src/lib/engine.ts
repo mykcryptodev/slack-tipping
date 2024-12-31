@@ -1,4 +1,4 @@
-import { ACCOUNT_FACTORY, ACCOUNT_FACTORY_ADMIN, CONTRACT, THIRDWEB_ENGINE_BACKEND_WALLET, TIP_TOKEN } from "~/constants";
+import { ACCOUNT_FACTORY, ACCOUNT_FACTORY_ADMIN, CONTRACT, THIRDWEB_ENGINE_BACKEND_EOA_WALLET, THIRDWEB_ENGINE_BACKEND_WALLET, TIP_TOKEN } from "~/constants";
 import { registerAccount as registerAccountTx, tipMany } from "~/thirdweb/84532/0xb18627080be9b71debc1e85daa5789f51345933e";
 import { CHAIN } from "~/constants";
 import { env } from "~/env";
@@ -217,10 +217,62 @@ export const getBalance = async (address: string) => {
   }
 }
 
-export const transferTips = async ({
-  senderAddress, toAddress, amount, idempotencyKey, userId
+export const getAccountAdmins = async (address: string) => {
+  const accountAdminsUrl = new URL(`${env.THIRDWEB_ENGINE_URL}/contract/${CHAIN.id}/${address}/account/admins/get-all`);
+
+  const fetchOptions = {
+    headers: {
+      Authorization: `Bearer ${env.THIRDWEB_ENGINE_ACCESS_TOKEN}`,
+    },
+    method: 'GET',
+  };
+
+  try {
+    const response = await fetch(accountAdminsUrl, fetchOptions);
+    const data = await response.json() as { result: string[] };
+    console.log('\x1b[33m%s\x1b[0m', `getAccountAdmins for address ${address}:`, JSON.stringify(data, null, 2));
+    return data.result;
+  } catch (error) {
+    console.error(`Error getting account admins for address ${address}:`, error);
+    throw error;
+  }
+}
+
+export const addAccountAdmin = async ({
+  address, adminAddress, idempotencyKey
 }: {
-  senderAddress: string, toAddress: string, amount: string, idempotencyKey: string, userId: string
+  address: string, adminAddress: string, idempotencyKey: string
+}) => {
+  const addAccountAdminUrl = new URL(`${env.THIRDWEB_ENGINE_URL}/contract/${CHAIN.id}/${address}/account/admins/grant`);
+
+  const fetchOptions = {
+    headers: {
+      Authorization: `Bearer ${env.THIRDWEB_ENGINE_ACCESS_TOKEN}`,
+      'Content-Type': 'application/json',
+      'X-Backend-Wallet-Address': THIRDWEB_ENGINE_BACKEND_EOA_WALLET,
+      'X-Idempotency-Key': idempotencyKey,
+    },
+    method: 'POST',
+    body: JSON.stringify({
+      signerAddress: adminAddress,
+    })
+  };
+
+  try {
+    const response = await fetch(addAccountAdminUrl, fetchOptions);
+    const data = await response.json() as { result: { queueId: string } };
+    console.log('\x1b[33m%s\x1b[0m', `addAccountAdmin for address ${address} admin ${adminAddress}:`, JSON.stringify(data, null, 2));
+    return data.result;
+  } catch (error) {
+    console.error(`Error adding account admin for address ${address} admin ${adminAddress}:`, error);
+    throw error;
+  }
+}
+
+export const transferTips = async ({
+  senderAddress, toAddress, amount, idempotencyKey
+}: {
+  senderAddress: string, toAddress: string, amount: string, idempotencyKey: string
 }) => {
   const transferUrl = new URL(`${env.THIRDWEB_ENGINE_URL}/contract/${CHAIN.id}/${TIP_TOKEN}/erc20/transfer`);
 
@@ -228,11 +280,9 @@ export const transferTips = async ({
     headers: {
       Authorization: `Bearer ${env.THIRDWEB_ENGINE_ACCESS_TOKEN}`,
       'Content-Type': 'application/json',
-      'x-backend-wallet-address': THIRDWEB_ENGINE_BACKEND_WALLET,
-      'x-account-address': senderAddress,
-      'x-idempotency-key': idempotencyKey,
-      'x-account-factory-address': ACCOUNT_FACTORY,
-      'x-account-salt': userId,
+      'X-Backend-Wallet-Address': THIRDWEB_ENGINE_BACKEND_EOA_WALLET,
+      'X-Account-Address': senderAddress,
+      'X-Idempotency-Key': idempotencyKey,
     },
     method: 'POST',
     body: JSON.stringify({
