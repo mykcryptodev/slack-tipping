@@ -3,9 +3,8 @@ import { CHAIN, TIP_INDICATOR } from "~/constants";
 import { env } from "~/env";
 import { db } from "~/server/db";
 import { getBalance } from "./engine";
-import { getTipsSentToday } from "./engine";
 import { getAddressByUserId } from "./engine";
-import { getAllTimeTippedCount } from "./ghost";
+import { getAllTimeTippedCount, getTipsSentToday } from "./ghost";
 import { toEther } from "thirdweb/utils";
 
 export const app = new App({
@@ -144,7 +143,7 @@ export const getSlackHomeView = async (userId: string) => {
   
   // Get user's stats
   const [tipsSentToday, balance] = await Promise.all([
-    getTipsSentToday(address),
+    getTipsSentToday({ address }),
     getBalance(address)
   ]);
   const totalTipsReceived = await getAllTimeTippedCount({ address });
