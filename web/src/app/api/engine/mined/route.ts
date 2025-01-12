@@ -177,6 +177,16 @@ export async function POST(req: NextRequest) {
                   },
                   url: `${CHAIN.blockExplorers![0]!.url}/tx/${body.transactionHash}`,
                   action_id: "view_transaction"
+                },
+                {
+                  type: "button" as const,
+                  text: {
+                    type: "plain_text" as const,
+                    text: "Turn Off Notifications",
+                    emoji: true
+                  },
+                  action_id: "notification_preference",
+                  value: "false"
                 }
               ]
             },
