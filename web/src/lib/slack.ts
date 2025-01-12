@@ -141,7 +141,6 @@ export const handleSlackInstallation = async (body: SlackPayload) => {
 export const getSlackHomeView = async (userId: string, teamId: string) => {
   // Get user's preferences
   const preferences = await getUserPreferences({ userId, teamId });
-  console.log({ preferencesFromHomeView: preferences });
 
   // Get user's blockchain address
   const address = await getAddressByUserId(userId, teamId);
