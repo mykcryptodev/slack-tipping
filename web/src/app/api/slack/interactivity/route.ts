@@ -26,7 +26,6 @@ export async function POST(req: NextRequest) {
               userId: payload.user.id,
               teamId: payload.team.id,
             });
-            console.log({ userPreferences });
             // Update user preferences in Redis
             await setUserPreferences({
               userId: payload.user.id,
