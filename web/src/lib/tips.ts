@@ -74,7 +74,7 @@ export const tipUsers = async (from: string, to: string[], amount: number, event
     }
   }
 
-  const tipTxn = await getTipTxn(senderAddress, addressesToTip, amount);
+  const tipTxn = await getTipTxn(senderAddress, addressesToTip, amount, teamId);
   txns.push(tipTxn);
 
   // send all transactions in one batch
