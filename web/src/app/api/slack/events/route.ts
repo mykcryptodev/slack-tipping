@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
 
       // check if this is a home event
       if (body.event?.type === 'app_home_opened') {
-        await getSlackHomeView(body.event.user!);
+        await getSlackHomeView(body.event.user!, body.team_id);
         return NextResponse.json({ ok: true });
       }
 
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
         if (mentionedUsers.length > 0 && tipCount > 0) {
           // Send loading message before processing tip
           if (body.event.channel) {
-            const result = await tipUsers(body.event.user, mentionedUsers, tipCount, body.event_id);
+            const result = await tipUsers(body.event.user, mentionedUsers, tipCount, body.event_id, body.team_id);
             if (result.queueIds.length > 0) {
               await setLoadingData({
                 queueId: result.queueIds[0]!,

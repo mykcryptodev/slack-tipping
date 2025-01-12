@@ -137,9 +137,9 @@ export const handleSlackInstallation = async (body: SlackPayload) => {
   return installation;
 };
 
-export const getSlackHomeView = async (userId: string) => {
+export const getSlackHomeView = async (userId: string, teamId: string) => {
   // Get user's blockchain address
-  const address = await getAddressByUserId(userId);
+  const address = await getAddressByUserId(userId, teamId);
   
   // Get user's stats
   const [tipsSentToday, balance] = await Promise.all([
