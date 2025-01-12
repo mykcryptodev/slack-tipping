@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { type NextRequest } from "next/server";
 import { CHAIN, TIP_INDICATOR } from "~/constants";
-import { getLoadingData } from "~/lib/redis";
+import { getLoadingData, getUserPreferences } from "~/lib/redis";
 import { app } from "~/lib/slack";
 import { db } from "~/server/db";
 import { type EngineWebhookPayload } from "~/types/engine";
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
           return profile;
         })
       ]);
-      // DM the sender and all the receivers
+      // DM the sender and receivers with the preferences for being notified
       await app.client.chat.postMessage({
         token: installation.botToken,
         channel: messageData.senderUserId,
@@ -129,10 +129,17 @@ export async function POST(req: NextRequest) {
         ],
         text: `✅ Your tip has been sent successfully!` // Fallback text
       });
-      for (const receiverUserId of messageData.receiverUserIds) {
+      const receiverPreferences = await Promise.all(messageData.receiverUserIds.map(async (userId) => {
+        return { receiverId: userId, preferences: await getUserPreferences({ userId, teamId: installation.teamId }) };
+      }));
+      // if no preferences, default to on
+      const receiversToNotify = receiverPreferences.filter(
+        storedUserPreferences => storedUserPreferences.preferences?.notifyOnTipReceived ?? true
+      );
+      for (const receiver of receiversToNotify) {
         await app.client.chat.postMessage({
           token: installation.botToken,
-          channel: receiverUserId,
+          channel: receiver.receiverId,
           blocks: [
             {
               type: "section",
@@ -170,6 +177,16 @@ export async function POST(req: NextRequest) {
                   },
                   url: `${CHAIN.blockExplorers![0]!.url}/tx/${body.transactionHash}`,
                   action_id: "view_transaction"
+                },
+                {
+                  type: "button" as const,
+                  text: {
+                    type: "plain_text" as const,
+                    text: "Turn Off Notifications",
+                    emoji: true
+                  },
+                  action_id: "notification_preference",
+                  value: "false"
                 }
               ]
             },
