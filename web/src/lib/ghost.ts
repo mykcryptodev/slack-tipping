@@ -190,7 +190,7 @@ export const getTeamLeaderboard = async ({
     const recipientTotals = new Map<string, number>();
     
     json.data.tips.items.forEach(tip => {
-      const currentTotal = recipientTotals.get(tip.tipperUserId) ?? 0;
+      const currentTotal = recipientTotals.get(tip.tippedUserId) ?? 0;
       const amount = toEther(BigInt(tip.amount));
       recipientTotals.set(tip.tippedUserId, currentTotal + Number(amount));
     });
