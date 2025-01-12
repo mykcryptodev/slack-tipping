@@ -50,5 +50,13 @@ export interface SlackInteractivityPayload {
     };
     type: string;
     action_ts: string;
+    selected_option?: {
+      text: {
+        type: string;
+        text: string;
+        emoji?: boolean;
+      };
+      value: string;
+    };
   }>;
 }

@@ -1,5 +1,6 @@
 import Redis from 'ioredis';
 import { env } from '~/env';
+import { type UserPreferences } from '~/types/redis';
 
 // Create Redis client
 const redis = new Redis(env.REDIS_URL);
@@ -99,6 +100,32 @@ export async function getLoadingData(queueId: string): Promise<LoadingMessageDat
   } catch {
     return null;
   }
+}
+
+export async function getUserPreferences({
+  userId,
+  teamId,
+}: {
+  userId: string;
+  teamId: string;
+}) {
+  const key = `user:preferences:${teamId}:${userId}`;
+  const data = await redis.get(key);
+  if (!data) return null;
+  return JSON.parse(data) as UserPreferences;
+}
+
+export async function setUserPreferences({
+  userId,
+  teamId,
+  preferences,
+}: {
+  userId: string;
+  teamId: string;
+  preferences: UserPreferences;
+}) {
+  const key = `user:preferences:${teamId}:${userId}`;
+  await redis.set(key, JSON.stringify(preferences));
 }
 
 export { redis }; 

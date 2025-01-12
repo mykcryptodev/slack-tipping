@@ -6,6 +6,7 @@ import { getBalance } from "./engine";
 import { getAddressByUserId } from "./engine";
 import { getAllTimeTippedCount, getTipsSentToday } from "./ghost";
 import { toEther } from "thirdweb/utils";
+import { getUserPreferences } from "./redis";
 
 export const app = new App({
   signingSecret: env.AUTH_SLACK_SIGNING_SECRET,
@@ -138,6 +139,10 @@ export const handleSlackInstallation = async (body: SlackPayload) => {
 };
 
 export const getSlackHomeView = async (userId: string, teamId: string) => {
+  // Get user's preferences
+  const preferences = await getUserPreferences({ userId, teamId });
+  console.log({ preferencesFromHomeView: preferences });
+
   // Get user's blockchain address
   const address = await getAddressByUserId(userId, teamId);
   
@@ -169,9 +174,6 @@ export const getSlackHomeView = async (userId: string, teamId: string) => {
             text: "Your Tip Stats 📊",
             emoji: true
           }
-        },
-        {
-          type: "divider"
         },
         {
           type: "section",
@@ -209,6 +211,75 @@ export const getSlackHomeView = async (userId: string, teamId: string) => {
           type: "divider"
         },
         {
+          type: "header",
+          text: {
+            type: "plain_text",
+            text: "Notifications :bell:",
+            emoji: true
+          }
+        },
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: "Choose whether you want to receive a message when someone tips you"
+          }
+        },
+        {
+          type: "actions",
+          elements: [
+            {
+              type: "radio_buttons",
+              action_id: "notification_preference",
+              // if no preferences, default to on
+              initial_option: preferences?.notifyOnTipReceived ?? true ? {
+                text: {
+                  type: "plain_text",
+                  text: "On",
+                  emoji: true
+                },
+                value: "true"
+              } : {
+                text: {
+                  type: "plain_text",
+                  text: "Off",
+                  emoji: true
+                },
+                value: "false"
+              },
+              options: [
+                {
+                  text: {
+                    type: "plain_text",
+                    text: "On",
+                    emoji: true
+                  },
+                  value: "true"
+                },
+                {
+                  text: {
+                    type: "plain_text",
+                    text: "Off", 
+                    emoji: true
+                  },
+                  value: "false"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          type: "divider"
+        },
+        {
+          type: "header",
+          text: {
+            type: "plain_text",
+            text: "Your Wallet :credit_card:",
+            emoji: true
+          }
+        },
+        {
           type: "section",
           text: {
             type: "mrkdwn",
@@ -241,6 +312,14 @@ export const getSlackHomeView = async (userId: string, teamId: string) => {
         },
         {
           type: "divider"
+        },
+        {
+          type: "header",
+          text: {
+            type: "plain_text",
+            text: "Withdraw Tacos :money_with_wings:",
+            emoji: true
+          }
         },
         {
           type: "input",

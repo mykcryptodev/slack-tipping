@@ -3,6 +3,7 @@ import { type NextRequest } from "next/server";
 import { type SlackInteractivityPayload } from "~/types/slack";
 import { addAccountAdmin, getAccountAdmins, getAddressByUserId, transferTips } from "~/lib/engine";
 import { THIRDWEB_ENGINE_BACKEND_EOA_WALLET } from "~/constants";
+import { setUserPreferences, getUserPreferences } from "~/lib/redis";
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,6 +18,24 @@ export async function POST(req: NextRequest) {
         for (const action of payload.actions ?? []) {
           if (action.action_id === 'view_transaction') {
             // The URL opening is handled by Slack client, we just need to acknowledge
+            return NextResponse.json({ ok: true });
+          }
+
+          if (action.action_id === 'notification_preference') {
+            const userPreferences = await getUserPreferences({
+              userId: payload.user.id,
+              teamId: payload.team.id,
+            });
+            console.log({ userPreferences });
+            // Update user preferences in Redis
+            await setUserPreferences({
+              userId: payload.user.id,
+              teamId: payload.team.id,
+              preferences: {
+                ...userPreferences,
+                notifyOnTipReceived: action.selected_option?.value === 'true'
+              }
+            });
             return NextResponse.json({ ok: true });
           }
 
