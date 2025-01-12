@@ -4,6 +4,10 @@ import { CHAIN } from "~/constants";
 import { env } from "~/env";
 import { encode, toHex, toWei } from "thirdweb";
 
+const generateAccountSalt = (teamId: string, userId: string) => {
+  return `${teamId}-${userId}`;
+}
+
 export const sendBatchTxns = async (txns: { toAddress: string, data: string, value: string }[], idempotencyKey: string) => {
   const url = new URL(`${env.THIRDWEB_ENGINE_URL}/backend-wallet/${CHAIN.id}/send-transaction-batch`);
   const fetchOptions = {
@@ -28,12 +32,12 @@ export const sendBatchTxns = async (txns: { toAddress: string, data: string, val
   }
 }
 
-export const getAddressByUserId = async (userId: string) => {
+export const getAddressByUserId = async (userId: string, teamId: string) => {
   const baseUrl = new URL(`${env.THIRDWEB_ENGINE_URL}/contract/${CHAIN.id}/${ACCOUNT_FACTORY}/account-factory`);
 
   const getAddressUrl = new URL(`${baseUrl}/predict-account-address`);
   getAddressUrl.searchParams.set('adminAddress', ACCOUNT_FACTORY_ADMIN);
-  getAddressUrl.searchParams.set('extraData', userId);
+  getAddressUrl.searchParams.set('extraData', generateAccountSalt(teamId, userId));
 
   const fetchOptions = {
     headers: {
@@ -45,10 +49,10 @@ export const getAddressByUserId = async (userId: string) => {
   try {
     const addressResponse = await fetch(getAddressUrl, fetchOptions);
     const addressData = await addressResponse.json() as { result: string };
-    console.log('\x1b[33m%s\x1b[0m', `getAddressByUserId for userId ${userId}:`, JSON.stringify(addressData, null, 2));
+    console.log('\x1b[33m%s\x1b[0m', `getAddressByUserId for userId ${userId} teamId ${teamId}:`, JSON.stringify(addressData, null, 2));
     return addressData.result;
   } catch (error) {
-    console.error(`Error getting address for user ${userId}:`, error);
+    console.error(`Error getting address for user ${userId} teamId ${teamId}:`, error);
     throw error;
   }
 };
@@ -87,11 +91,11 @@ export const getRegisterAccountTx = async (address: string) => {
   };
 }
 
-export const isAddressDeployed = async (userId: string) => {
+export const isAddressDeployed = async (userId: string, teamId: string) => {
   const baseUrl = new URL(`${env.THIRDWEB_ENGINE_URL}/contract/${CHAIN.id}/${ACCOUNT_FACTORY}/account-factory`);
   const isDeployedUrl = new URL(`${baseUrl}/is-account-deployed`);
   isDeployedUrl.searchParams.set('adminAddress', ACCOUNT_FACTORY_ADMIN);
-  isDeployedUrl.searchParams.set('extraData', toHex(userId));
+  isDeployedUrl.searchParams.set('extraData', toHex(generateAccountSalt(teamId, userId)));
 
   const fetchOptions = {
     headers: {
@@ -103,18 +107,18 @@ export const isAddressDeployed = async (userId: string) => {
   try {
     const response = await fetch(isDeployedUrl, fetchOptions);
     const data = await response.json() as { result: boolean };
-    console.log('\x1b[33m%s\x1b[0m', `isDeployed for userId ${userId}:`, JSON.stringify(data, null, 2));
+    console.log('\x1b[33m%s\x1b[0m', `isDeployed for userId ${userId} teamId ${teamId}:`, JSON.stringify(data, null, 2));
     return data.result;
   } catch (error) {
-    console.error(`Error getting isDeployed for userId ${userId}:`, error);
+    console.error(`Error getting isDeployed for userId ${userId} teamId ${teamId}:`, error);
     throw error;
   }
 };
 
 export const deployAccount = async ({
-  userId, idempotencyKey
+  userId, teamId, idempotencyKey
 }: {
-  userId: string, idempotencyKey: string
+  userId: string, teamId: string, idempotencyKey: string
 }) => {
   const createAccountUrl = new URL(`${env.THIRDWEB_ENGINE_URL}/contract/${CHAIN.id}/${ACCOUNT_FACTORY}/account-factory/create-account`);
 
@@ -125,12 +129,12 @@ export const deployAccount = async ({
       'x-backend-wallet-address': ACCOUNT_FACTORY_ADMIN,
       'x-idempotency-key': idempotencyKey,
       'x-account-factory-address': ACCOUNT_FACTORY,
-      'x-account-salt': userId
+      'x-account-salt': generateAccountSalt(teamId, userId)
     },
     method: 'POST',
     body: JSON.stringify({
       adminAddress: ACCOUNT_FACTORY_ADMIN,
-      extraData: userId,
+      extraData: generateAccountSalt(teamId, userId)
     })
   };
 
@@ -142,10 +146,10 @@ export const deployAccount = async ({
         deployedAddress: string;
       }
     };
-    console.log('\x1b[33m%s\x1b[0m', `deployAccount for user ${userId}:`, JSON.stringify(data, null, 2));
+    console.log('\x1b[33m%s\x1b[0m', `deployAccount for user ${userId} teamId ${teamId}:`, JSON.stringify(data, null, 2));
     return data.result;
   } catch (error) {
-    console.error(`Error deploying account for user ${userId}:`, error);
+    console.error(`Error deploying account for user ${userId} teamId ${teamId}:`, error);
     throw error;
   }
 }

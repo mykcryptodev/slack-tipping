@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
               }
 
               // Get the user's account address
-              const userAddress = await getAddressByUserId(payload.user.id);
+              const userAddress = await getAddressByUserId(payload.user.id, payload.team.id);
               
               const accountAdmins = await getAccountAdmins(userAddress);
               if (!accountAdmins.includes(THIRDWEB_ENGINE_BACKEND_EOA_WALLET)) {

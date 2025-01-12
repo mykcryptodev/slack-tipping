@@ -9,21 +9,22 @@ import {
 } from "./engine";
 
 // TODO: transactions are failing when the user needs to be registered even though we are bundling
-export const tipUsers = async (from: string, to: string[], amount: number, eventId: string) => {
+export const tipUsers = async (from: string, to: string[], amount: number, eventId: string, teamId: string) => {
   // we will do one batch transaction for onchain activity (except for deploying accounts)
   const txns = [];
 
   console.log(`User ${from} tipped ${amount} to users:`, to);
   // check if the sender has an account
-  const senderAddress = await getAddressByUserId(from);
-  const senderIsDeployed = await isAddressDeployed(from);
+  const senderAddress = await getAddressByUserId(from, teamId);
+  const senderIsDeployed = await isAddressDeployed(from, teamId);
   console.log(`Sender ${from} has an account at ${senderAddress} and is ${senderIsDeployed ? 'deployed' : 'not deployed'}`);
   
   if (!senderIsDeployed) {
     console.log(`User ${from} has not deployed an account at ${senderAddress}`);
     const { deployedAddress } = await deployAccount({
       userId: from,
-      idempotencyKey: `deploy-account-${from}-${eventId}`
+      teamId,
+      idempotencyKey: `deploy-account-${teamId}-${from}-${eventId}`
     });
     console.log(`Deployed account for user ${from} at ${deployedAddress}`);
   } else {
@@ -53,15 +54,16 @@ export const tipUsers = async (from: string, to: string[], amount: number, event
 
     console.log(`Getting address for user ${toUser}`);
     try {
-      const address = await getAddressByUserId(toUser);
-      const isDeployed = await isAddressDeployed(toUser);
+      const address = await getAddressByUserId(toUser, teamId);
+      const isDeployed = await isAddressDeployed(toUser, teamId);
       console.log(`Receiver ${toUser} has an account at ${address} and is ${isDeployed ? 'deployed' : 'not deployed'}`);
       if (!isDeployed) {
         console.log(`User ${toUser} has not deployed an account at ${address}`);
         // no need to await this
         void deployAccount({
           userId: toUser,
-          idempotencyKey: `deploy-account-${toUser}-${eventId}`
+          teamId,
+          idempotencyKey: `deploy-account-${teamId}-${toUser}-${eventId}`
         });
       } else {
         console.log(`User ${toUser} has an existing account at ${address}`);
