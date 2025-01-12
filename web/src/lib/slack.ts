@@ -4,9 +4,9 @@ import { env } from "~/env";
 import { db } from "~/server/db";
 import { getBalance } from "./engine";
 import { getAddressByUserId } from "./engine";
-import { getAllTimeTippedCount, getTipsSentToday } from "./ghost";
-import { toEther } from "thirdweb/utils";
-import { getUserPreferences } from "./redis";
+import { getAllTimeTippedCount, getTipsSentToday, getDailyLeaderboard, getWeeklyLeaderboard, getMonthlyLeaderboard } from "./ghost";
+import { shortenAddress, toEther } from "thirdweb/utils";
+import { getUserIdByAddress, getUserPreferences } from "./redis";
 
 export const app = new App({
   signingSecret: env.AUTH_SLACK_SIGNING_SECRET,
@@ -138,6 +138,64 @@ export const handleSlackInstallation = async (body: SlackPayload) => {
   return installation;
 };
 
+interface SlackUserProfile {
+  real_name?: string;
+  profile?: {
+    display_name?: string;
+    image_512?: string;
+  };
+  name?: string;
+}
+
+const getUserProfile = async (userId: string, botToken: string): Promise<SlackUserProfile | null> => {
+  try {
+    const result = await app.client.users.info({
+      token: botToken,
+      user: userId,
+    });
+    return result.user as SlackUserProfile;
+  } catch (error) {
+    console.error(`Error fetching user profile for ${userId}:`, error);
+    return null;
+  }
+};
+
+const formatLeaderboardSection = (title: string, entries: { userId: string, displayName: string, avatarUrl: string, amount: string }[], limit = 5) => {
+  if (entries.length === 0) {
+    return [{
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `*${title}*\nNo tips yet!`
+      }
+    }];
+  }
+
+  return [
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `*${title}*`
+      }
+    },
+    {
+      type: "context",
+      elements: entries.slice(0, 5).map((entry, index) => ([
+        {
+          type: "image",
+          image_url: entry.avatarUrl,
+          alt_text: entry.displayName
+        },
+        {
+          type: "mrkdwn",
+          text: `${index + 1}. *${entry.displayName}* - ${entry.amount} ${TIP_INDICATOR}`
+        }
+      ])).flat()
+    }
+  ].slice(0, limit);
+};
+
 export const getSlackHomeView = async (userId: string, teamId: string) => {
   // Get user's preferences
   const preferences = await getUserPreferences({ userId, teamId });
@@ -146,11 +204,11 @@ export const getSlackHomeView = async (userId: string, teamId: string) => {
   const address = await getAddressByUserId(userId, teamId);
   
   // Get user's stats
-  const [tipsSentToday, balance] = await Promise.all([
+  const [tipsSentToday, balance, totalTipsReceived] = await Promise.all([
     getTipsSentToday({ address }),
-    getBalance(address)
+    getBalance(address),
+    getAllTimeTippedCount({ address })
   ]);
-  const totalTipsReceived = await getAllTimeTippedCount({ address });
 
   // Get the installation for this team
   const installation = await db.slackInstall.findFirst();
@@ -158,6 +216,49 @@ export const getSlackHomeView = async (userId: string, teamId: string) => {
     console.error('No bot token found');
     throw new Error('No bot token found');
   }
+
+  // Get leaderboards
+  const [dailyLeaderboard, weeklyLeaderboard, monthlyLeaderboard] = await Promise.all([
+    getDailyLeaderboard(teamId),
+    getWeeklyLeaderboard(teamId),
+    getMonthlyLeaderboard(teamId)
+  ]);
+
+  // Get user profiles for leaderboards
+  const allUserAddresses = new Set([
+    ...dailyLeaderboard.map(e => e.userAddress),
+    ...weeklyLeaderboard.map(e => e.userAddress),
+    ...monthlyLeaderboard.map(e => e.userAddress)
+  ]);
+
+  const userProfiles = new Map<string, SlackUserProfile>();
+  await Promise.all(Array.from(allUserAddresses).map(async (userAddress) => {
+    const userId = await getUserIdByAddress({
+      address: userAddress,
+    });
+    if (!userId) {
+      return;
+    }
+    const profile = await getUserProfile(userId, installation.botToken!);
+    if (profile) {
+      userProfiles.set(userAddress, profile);
+    }
+  }));
+
+  const formatLeaderboardEntries = (leaderboard: typeof dailyLeaderboard) => {
+    return leaderboard.map(entry => {
+      const profile = userProfiles.get(entry.userAddress);
+      return {
+        userId: userId,
+        displayName: profile?.profile?.display_name ?? 
+                    profile?.real_name ?? 
+                    profile?.name ?? 
+                    shortenAddress(entry.userAddress),
+        avatarUrl: profile?.profile?.image_512 ?? `https://robohash.org/${entry.userAddress}`,
+        amount: entry.totalAmount.toString()
+      };
+    });
+  };
 
   // Publish the home view
   await app.client.views.publish({
@@ -206,6 +307,20 @@ export const getSlackHomeView = async (userId: string, teamId: string) => {
             }
           ]
         },
+        {
+          type: "divider"
+        },
+        {
+          type: "header",
+          text: {
+            type: "plain_text",
+            text: "Team Leaderboard 🏆",
+            emoji: true
+          }
+        },
+        ...formatLeaderboardSection("Today's Top Recipients", formatLeaderboardEntries(dailyLeaderboard)),
+        ...formatLeaderboardSection("This Week's Top Recipients", formatLeaderboardEntries(weeklyLeaderboard)),
+        ...formatLeaderboardSection("This Month's Top Recipients", formatLeaderboardEntries(monthlyLeaderboard)),
         {
           type: "divider"
         },

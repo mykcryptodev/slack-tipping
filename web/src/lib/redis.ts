@@ -128,4 +128,25 @@ export async function setUserPreferences({
   await redis.set(key, JSON.stringify(preferences));
 }
 
+export async function setAddressByUserId({
+  userId,
+  address,
+}: {
+  address: string;
+  userId: string;
+}) {
+  const key = `user:address:${address.toLowerCase()}`;
+  await redis.set(key, userId);
+}
+
+export async function getUserIdByAddress({
+  address,
+}: {
+  address: string;
+}) {
+  const key = `user:address:${address.toLowerCase()}`;
+  const userId = await redis.get(key);
+  return userId;
+}
+
 export { redis }; 
