@@ -21,7 +21,7 @@ contract Tips is ERC20Base, PermissionsEnumerable {
     uint256 public constant DAILY_TIP_LIMIT = 5 * 10**18; // 5 tokens with 18 decimals
     uint256 public constant RESET_PERIOD = 24 hours; // Reset period is 24 hours
 
-    event Tipped(address indexed sender, address indexed recipient, uint256 amount);
+    event Tipped(address indexed sender, address indexed recipient, uint256 amount, bytes32 indexed encryptedTeamId);
     event Registered(address indexed account, address indexed registeredBy);
     event Unregistered(address indexed account, address indexed unregisteredBy);
 
@@ -62,17 +62,17 @@ contract Tips is ERC20Base, PermissionsEnumerable {
         }
     }
 
-    function tip(address to, address from, uint256 amount) external {
-        _tip(to, from, amount);
+    function tip(address to, address from, uint256 amount, bytes32 encryptedTeamId) external {
+        _tip(to, from, amount, encryptedTeamId);
     }
 
-    function tipMany(address[] calldata to, address from, uint256 amount) external {
+    function tipMany(address[] calldata to, address from, uint256 amount, bytes32 encryptedTeamId) external {
         for (uint256 i = 0; i < to.length; i++) {
-            _tip(to[i], from, amount);
+            _tip(to[i], from, amount, encryptedTeamId);
         }
     }
     
-    function _tip(address to, address from, uint256 amount) internal {
+    function _tip(address to, address from, uint256 amount, bytes32 encryptedTeamId) internal {
         if (!isRegistered[from] && !hasRole(TIP_ON_BEHALF_OF_ROLE, msg.sender)) revert SenderNotRegistered();
         if (from == to) revert CannotTipYourself();
         // msg.sender must be the from or have the TIP_ON_BEHALF_OF_ROLE
@@ -84,6 +84,6 @@ contract Tips is ERC20Base, PermissionsEnumerable {
         tipsSentToday[from] += amount;
         _mint(to, amount);
 
-        emit Tipped(from, to, amount);
+        emit Tipped(from, to, amount, encryptedTeamId);
     }
 }

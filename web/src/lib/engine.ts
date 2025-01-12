@@ -1,8 +1,9 @@
 import { ACCOUNT_FACTORY, ACCOUNT_FACTORY_ADMIN, CONTRACT, THIRDWEB_ENGINE_BACKEND_EOA_WALLET, THIRDWEB_ENGINE_BACKEND_WALLET, TIP_TOKEN } from "~/constants";
-import { registerAccount as registerAccountTx, tipMany } from "~/thirdweb/84532/0xb18627080be9b71debc1e85daa5789f51345933e";
+import { registerAccount as registerAccountTx, tipMany } from "~/thirdweb/84532/0xce8065a341a80a2322b1d22457346fa8a279618f";
 import { CHAIN } from "~/constants";
 import { env } from "~/env";
 import { encode, toHex, toWei } from "thirdweb";
+import { encodeAbiParameters, keccak256 } from "viem";
 
 const generateAccountSalt = (teamId: string, userId: string) => {
   return `${teamId}-${userId}`;
@@ -154,12 +155,14 @@ export const deployAccount = async ({
   }
 }
 
-export const getTipTxn = async (senderAddress: string, toAddresses: string[], amount: number) => {
+export const getTipTxn = async (senderAddress: string, toAddresses: string[], amount: number, teamId: string) => {
+  const encryptedTeamId = keccak256(encodeAbiParameters([{ type: 'string' }], [teamId]));
   const tipManyTxn = tipMany({
     contract: CONTRACT,
     to: toAddresses,
     from: senderAddress,
     amount: toWei(amount.toString()),
+    encryptedTeamId,
   });
   return {
     toAddress: TIP_TOKEN,

@@ -7,6 +7,7 @@ import {
   deployAccount,
   getTipTxn
 } from "./engine";
+import { setAddressByUserId } from "./redis";
 
 // TODO: transactions are failing when the user needs to be registered even though we are bundling
 export const tipUsers = async (from: string, to: string[], amount: number, eventId: string, teamId: string) => {
@@ -27,6 +28,13 @@ export const tipUsers = async (from: string, to: string[], amount: number, event
       idempotencyKey: `deploy-account-${teamId}-${from}-${eventId}`
     });
     console.log(`Deployed account for user ${from} at ${deployedAddress}`);
+    // save the address to user ID mapping in redis
+    // no need to await this
+    void setAddressByUserId({
+      address: deployedAddress,
+      userId: from
+    });
+
   } else {
     console.log(`From user ${from} has an existing account at ${senderAddress}`);
   }
@@ -59,11 +67,15 @@ export const tipUsers = async (from: string, to: string[], amount: number, event
       console.log(`Receiver ${toUser} has an account at ${address} and is ${isDeployed ? 'deployed' : 'not deployed'}`);
       if (!isDeployed) {
         console.log(`User ${toUser} has not deployed an account at ${address}`);
-        // no need to await this
-        void deployAccount({
+        const { deployedAddress } = await deployAccount({
           userId: toUser,
           teamId,
           idempotencyKey: `deploy-account-${teamId}-${toUser}-${eventId}`
+        });
+        // no need to await this
+        void setAddressByUserId({
+          address: deployedAddress,
+          userId: toUser
         });
       } else {
         console.log(`User ${toUser} has an existing account at ${address}`);
@@ -74,7 +86,7 @@ export const tipUsers = async (from: string, to: string[], amount: number, event
     }
   }
 
-  const tipTxn = await getTipTxn(senderAddress, addressesToTip, amount);
+  const tipTxn = await getTipTxn(senderAddress, addressesToTip, amount, teamId);
   txns.push(tipTxn);
 
   // send all transactions in one batch

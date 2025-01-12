@@ -287,7 +287,7 @@ recipient: AbiParameterToPrimitiveType<{"indexed":true,"internalType":"address",
  */
 export function tippedEvent(filters: TippedEventFilters = {}) {
   return prepareEvent({
-    signature: "event Tipped(address indexed sender, address indexed recipient, uint256 amount)",
+    signature: "event Tipped(address indexed sender, address indexed recipient, uint256 amount, bytes32 encryptedTeamId)",
     filters,
   });
 };
@@ -2142,6 +2142,7 @@ export type TipParams = {
   to: AbiParameterToPrimitiveType<{"internalType":"address","name":"to","type":"address"}>
 from: AbiParameterToPrimitiveType<{"internalType":"address","name":"from","type":"address"}>
 amount: AbiParameterToPrimitiveType<{"internalType":"uint256","name":"amount","type":"uint256"}>
+encryptedTeamId: AbiParameterToPrimitiveType<{"internalType":"bytes32","name":"encryptedTeamId","type":"bytes32"}>
 };
 
 /**
@@ -2156,6 +2157,7 @@ amount: AbiParameterToPrimitiveType<{"internalType":"uint256","name":"amount","t
  *  to: ...,
  *  from: ...,
  *  amount: ...,
+ *  encryptedTeamId: ...,
  * });
  *
  * // Send the transaction
@@ -2169,7 +2171,7 @@ export function tip(
   return prepareContractCall({
     contract: options.contract,
     method: [
-  "0xd82555f1",
+  "0x93ecec09",
   [
     {
       "internalType": "address",
@@ -2185,11 +2187,16 @@ export function tip(
       "internalType": "uint256",
       "name": "amount",
       "type": "uint256"
+    },
+    {
+      "internalType": "bytes32",
+      "name": "encryptedTeamId",
+      "type": "bytes32"
     }
   ],
   []
 ],
-    params: [options.to, options.from, options.amount]
+    params: [options.to, options.from, options.amount, options.encryptedTeamId]
   });
 };
 
@@ -2201,6 +2208,7 @@ export type TipManyParams = {
   to: AbiParameterToPrimitiveType<{"internalType":"address[]","name":"to","type":"address[]"}>
 from: AbiParameterToPrimitiveType<{"internalType":"address","name":"from","type":"address"}>
 amount: AbiParameterToPrimitiveType<{"internalType":"uint256","name":"amount","type":"uint256"}>
+encryptedTeamId: AbiParameterToPrimitiveType<{"internalType":"bytes32","name":"encryptedTeamId","type":"bytes32"}>
 };
 
 /**
@@ -2215,6 +2223,7 @@ amount: AbiParameterToPrimitiveType<{"internalType":"uint256","name":"amount","t
  *  to: ...,
  *  from: ...,
  *  amount: ...,
+ *  encryptedTeamId: ...,
  * });
  *
  * // Send the transaction
@@ -2228,7 +2237,7 @@ export function tipMany(
   return prepareContractCall({
     contract: options.contract,
     method: [
-  "0x3d7f302d",
+  "0x5c5a7da3",
   [
     {
       "internalType": "address[]",
@@ -2244,11 +2253,16 @@ export function tipMany(
       "internalType": "uint256",
       "name": "amount",
       "type": "uint256"
+    },
+    {
+      "internalType": "bytes32",
+      "name": "encryptedTeamId",
+      "type": "bytes32"
     }
   ],
   []
 ],
-    params: [options.to, options.from, options.amount]
+    params: [options.to, options.from, options.amount, options.encryptedTeamId]
   });
 };
 
